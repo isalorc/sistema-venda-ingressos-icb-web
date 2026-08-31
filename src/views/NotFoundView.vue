@@ -6,9 +6,7 @@ import { RouterLink } from 'vue-router'
   <div class="nao-encontrado">
     <h1>Página não encontrada</h1>
     <p class="texto-muted">O endereço acessado não existe.</p>
-    <RouterLink :to="{ name: 'admin-eventos' }" class="btn btn--secundario">
-      Ir para o painel
-    </RouterLink>
+    <RouterLink :to="{ name: 'home' }" class="btn btn--secundario"> Ir para o início </RouterLink>
   </div>
 </template>
 

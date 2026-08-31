@@ -5,8 +5,17 @@ import { useAuthStore } from '@/stores/auth'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // Fluxo do cliente ainda não construído — por ora a raiz leva ao painel admin.
-    { path: '/', redirect: '/admin' },
+    {
+      path: '/',
+      component: () => import('@/layouts/PublicoLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: () => import('@/views/cliente/HomeView.vue'),
+        },
+      ],
+    },
 
     {
       path: '/admin/login',
