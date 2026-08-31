@@ -38,8 +38,8 @@ async function salvar() {
     if (descricaoLimpa) payload.descricao = descricaoLimpa
 
     const { id } = await criarEvento(payload)
-    // Evento sem lote não vende — o próximo passo (criar lote) encaminha aqui.
-    router.push({ name: 'admin-eventos', query: { criado: String(id) } })
+    // Evento sem lote não vende — encaminha direto para criar o primeiro lote.
+    router.push({ name: 'admin-lote-novo', params: { eventoId: String(id) } })
   } catch (e) {
     const { mensagem, camposInvalidos } = tratarErro(e)
     erro.value = mensagem
