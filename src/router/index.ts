@@ -36,6 +36,12 @@ const router = createRouter({
           component: () => import('@/views/admin/LoteNovoView.vue'),
           props: true,
         },
+        {
+          path: 'eventos/:eventoId/inscritos',
+          name: 'admin-inscritos',
+          component: () => import('@/views/admin/InscritosView.vue'),
+          props: true,
+        },
       ],
     },
 
