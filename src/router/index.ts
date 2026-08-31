@@ -31,6 +31,12 @@ const router = createRouter({
           component: () => import('@/views/admin/EventoNovoView.vue'),
         },
         {
+          path: 'eventos/:eventoId',
+          name: 'admin-evento-detalhe',
+          component: () => import('@/views/admin/EventoDetalheAdminView.vue'),
+          props: true,
+        },
+        {
           path: 'eventos/:eventoId/lotes/novo',
           name: 'admin-lote-novo',
           component: () => import('@/views/admin/LoteNovoView.vue'),

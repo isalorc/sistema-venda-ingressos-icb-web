@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import { criarLote } from '@/services/admin'
 import { consultarEvento } from '@/services/eventos'
 import { tratarErro } from '@/services/api'
@@ -8,6 +9,8 @@ import { formatarDataHora, formatarDinheiro } from '@/utils/formato'
 
 const props = defineProps<{ eventoId: string }>()
 const eventoId = computed(() => Number(props.eventoId))
+
+const toast = useToast()
 
 const evento = ref<EventoDetalhe | null>(null)
 const carregando = ref(true)
@@ -18,7 +21,6 @@ const preco = ref<number | null>(null)
 const quantidadeTotal = ref<number | null>(null)
 
 const erro = ref('')
-const sucesso = ref('')
 const errosCampo = ref<Record<string, string>>({})
 const enviando = ref(false)
 
@@ -43,7 +45,6 @@ function limparForm() {
 
 async function salvar() {
   erro.value = ''
-  sucesso.value = ''
   errosCampo.value = {}
   enviando.value = true
   try {
@@ -53,7 +54,12 @@ async function salvar() {
       quantidadeTotal: Number(quantidadeTotal.value),
     }
     await criarLote(eventoId.value, payload)
-    sucesso.value = `Lote "${payload.nome}" criado.`
+    toast.add({
+      severity: 'success',
+      summary: 'Lote criado',
+      detail: `"${payload.nome}" adicionado ao evento.`,
+      life: 3000,
+    })
     limparForm()
     await carregarEvento()
   } catch (e) {
@@ -72,7 +78,12 @@ onMounted(carregarEvento)
   <section class="pilha">
     <div class="cabecalho-secao">
       <h1>Lotes do evento</h1>
-      <RouterLink :to="{ name: 'admin-eventos' }" class="btn btn--secundario">Concluir</RouterLink>
+      <RouterLink
+        :to="{ name: 'admin-evento-detalhe', params: { eventoId: props.eventoId } }"
+        class="btn btn--secundario"
+      >
+        Concluir
+      </RouterLink>
     </div>
 
     <p v-if="carregando" class="texto-muted">Carregando…</p>
@@ -104,7 +115,6 @@ onMounted(carregarEvento)
 
       <h2 class="titulo-form">Novo lote</h2>
 
-      <p v-if="sucesso" class="alerta alerta--sucesso" role="status">{{ sucesso }}</p>
       <p v-if="erro" class="alerta alerta--erro" role="alert">{{ erro }}</p>
 
       <form class="pilha" novalidate @submit.prevent="salvar">

@@ -55,11 +55,10 @@ onMounted(carregar)
           <td>{{ evento.quantidadeLotes }}</td>
           <td>{{ evento.ingressosDisponiveis }} / {{ evento.ingressosTotais }}</td>
           <td class="acoes-linha">
-            <RouterLink :to="{ name: 'admin-lote-novo', params: { eventoId: String(evento.id) } }">
-              Adicionar lote
-            </RouterLink>
-            <RouterLink :to="{ name: 'admin-inscritos', params: { eventoId: String(evento.id) } }">
-              Inscritos
+            <RouterLink
+              :to="{ name: 'admin-evento-detalhe', params: { eventoId: String(evento.id) } }"
+            >
+              Abrir
             </RouterLink>
           </td>
         </tr>
@@ -109,10 +108,6 @@ onMounted(carregar)
 .acoes-linha a {
   font-size: var(--fs-sm);
   color: var(--cor-tinta);
-}
-
-.acoes-linha a + a {
-  margin-left: var(--sp-3);
 }
 
 .etiqueta {

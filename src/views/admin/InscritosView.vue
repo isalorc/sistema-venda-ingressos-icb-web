@@ -38,7 +38,12 @@ onMounted(carregar)
   <section class="pilha">
     <div class="cabecalho-secao">
       <h1>Inscritos</h1>
-      <RouterLink :to="{ name: 'admin-eventos' }" class="btn btn--secundario">Voltar</RouterLink>
+      <RouterLink
+        :to="{ name: 'admin-evento-detalhe', params: { eventoId: props.eventoId } }"
+        class="btn btn--secundario"
+      >
+        Voltar
+      </RouterLink>
     </div>
 
     <p v-if="carregando" class="texto-muted">Carregando…</p>
