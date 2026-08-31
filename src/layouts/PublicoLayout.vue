@@ -17,8 +17,11 @@ import logoIcb from '@/assets/logo-icb.png'
     </main>
 
     <footer class="publico__rodape container">
-      <p>Igreja Casa da Benção — ICB Santos</p>
-      <p class="texto-muted">Av. Conselheiro Nébias, 324 — Vila Matias, Santos/SP</p>
+      <div>
+        <p>Igreja Casa da Benção — ICB Santos</p>
+        <p class="texto-muted">Av. Conselheiro Nébias, 324 — Vila Matias, Santos/SP</p>
+      </div>
+      <RouterLink :to="{ name: 'admin-login' }" class="publico__admin">Acesso administrativo</RouterLink>
     </footer>
   </div>
 </template>
@@ -58,8 +61,19 @@ import logoIcb from '@/assets/logo-icb.png'
 }
 
 .publico__rodape {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
   padding-block: var(--sp-5);
   border-top: 1px solid var(--cor-borda);
   font-size: var(--fs-sm);
+}
+
+.publico__admin {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  color: var(--cor-muted);
+  text-underline-offset: 2px;
 }
 </style>
