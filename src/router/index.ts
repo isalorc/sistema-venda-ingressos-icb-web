@@ -26,6 +26,16 @@ const router = createRouter({
           component: () => import('@/views/cliente/CheckoutView.vue'),
           props: true,
         },
+        {
+          path: 'pagamento',
+          name: 'pagamento',
+          component: () => import('@/views/cliente/PagamentoView.vue'),
+        },
+        {
+          path: 'pos-compra',
+          name: 'pos-compra',
+          component: () => import('@/views/cliente/PosCompraView.vue'),
+        },
       ],
     },
 

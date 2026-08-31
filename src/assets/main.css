@@ -146,3 +146,9 @@
   background-color: var(--cor-sucesso-fundo);
   border-color: var(--cor-sucesso);
 }
+
+.alerta--aviso {
+  color: var(--cor-aviso);
+  background-color: var(--cor-aviso-fundo);
+  border-color: var(--cor-aviso);
+}
