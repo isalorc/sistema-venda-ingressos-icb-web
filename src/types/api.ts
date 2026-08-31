@@ -82,6 +82,22 @@ export interface RecursoCriado {
   id: number
 }
 
+/**
+ * Item da lista do painel (`GET /api/admin/eventos`, requer token).
+ * Diferente de `EventoResumo` (rota pública): traz TODOS os eventos, inclusive
+ * passados e sem lote, com um resumo de lotes/estoque.
+ */
+export interface EventoAdmin {
+  id: number
+  nome: string
+  descricao: string | null
+  dataHora: string
+  jaOcorreu: boolean
+  quantidadeLotes: number
+  ingressosTotais: number
+  ingressosDisponiveis: number
+}
+
 export interface Inscrito {
   nomeCliente: string
   emailCliente: string

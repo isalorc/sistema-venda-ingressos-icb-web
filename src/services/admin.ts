@@ -4,6 +4,7 @@
  */
 import { api } from '@/services/api'
 import type {
+  EventoAdmin,
   Inscrito,
   LoginAdmin,
   NovoEvento,
@@ -14,6 +15,12 @@ import type {
 
 export async function login(credenciais: LoginAdmin): Promise<TokenAdmin> {
   const { data } = await api.post<TokenAdmin>('/api/admin/login', credenciais)
+  return data
+}
+
+/** Lista TODOS os eventos (passados/futuros, com ou sem lote) para o painel. */
+export async function listarEventos(): Promise<EventoAdmin[]> {
+  const { data } = await api.get<EventoAdmin[]>('/api/admin/eventos')
   return data
 }
 

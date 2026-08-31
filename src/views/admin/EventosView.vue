@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { listarEventosDisponiveis } from '@/services/eventos'
+import { listarEventos } from '@/services/admin'
 import { tratarErro } from '@/services/api'
-import type { EventoResumo } from '@/types/api'
-import { formatarDataHora, formatarDinheiro } from '@/utils/formato'
+import type { EventoAdmin } from '@/types/api'
+import { formatarDataHora } from '@/utils/formato'
 
-const eventos = ref<EventoResumo[]>([])
+const eventos = ref<EventoAdmin[]>([])
 const carregando = ref(true)
 const erro = ref('')
 
@@ -13,7 +13,7 @@ async function carregar() {
   carregando.value = true
   erro.value = ''
   try {
-    eventos.value = await listarEventosDisponiveis()
+    eventos.value = await listarEventos()
   } catch (e) {
     erro.value = tratarErro(e).mensagem
   } finally {
@@ -33,25 +33,26 @@ onMounted(carregar)
 
     <p v-if="carregando" class="texto-muted">Carregando…</p>
     <p v-else-if="erro" class="alerta alerta--erro">{{ erro }}</p>
-    <p v-else-if="eventos.length === 0" class="texto-muted">
-      Nenhum evento disponível. (A tela de cadastro de evento e lote é o próximo passo.)
-    </p>
+    <p v-else-if="eventos.length === 0" class="texto-muted">Nenhum evento cadastrado.</p>
 
     <table v-else class="tabela">
       <thead>
         <tr>
           <th>Evento</th>
           <th>Data</th>
-          <th>Menor preço</th>
-          <th>Ingressos disponíveis</th>
+          <th>Lotes</th>
+          <th>Ingressos</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="evento in eventos" :key="evento.id">
-          <td>{{ evento.nome }}</td>
+          <td>
+            {{ evento.nome }}
+            <span v-if="evento.jaOcorreu" class="etiqueta">já ocorreu</span>
+          </td>
           <td>{{ formatarDataHora(evento.dataHora) }}</td>
-          <td>{{ formatarDinheiro(evento.menorPreco) }}</td>
-          <td>{{ evento.ingressosDisponiveis }}</td>
+          <td>{{ evento.quantidadeLotes }}</td>
+          <td>{{ evento.ingressosDisponiveis }} / {{ evento.ingressosTotais }}</td>
         </tr>
       </tbody>
     </table>
@@ -85,5 +86,16 @@ onMounted(carregar)
 .tabela th {
   font-weight: 600;
   color: var(--cor-muted);
+}
+
+.etiqueta {
+  display: inline-block;
+  margin-left: var(--sp-2);
+  padding: 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--cor-muted);
+  background-color: var(--cor-fundo-alt);
+  border-radius: var(--raio-sm);
 }
 </style>
