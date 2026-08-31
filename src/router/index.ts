@@ -20,6 +20,12 @@ const router = createRouter({
           component: () => import('@/views/cliente/EventoDetalheView.vue'),
           props: true,
         },
+        {
+          path: 'eventos/:eventoId/checkout',
+          name: 'checkout',
+          component: () => import('@/views/cliente/CheckoutView.vue'),
+          props: true,
+        },
       ],
     },
 
