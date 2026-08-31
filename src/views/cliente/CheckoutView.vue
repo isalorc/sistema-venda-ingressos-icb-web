@@ -152,16 +152,18 @@ onMounted(carregar)
           <span v-if="errosCampo.telefone" class="campo__erro">{{ errosCampo.telefone }}</span>
         </div>
 
-        <fieldset class="campo" :class="{ 'campo--erro': errosCampo.metodoPagamento }">
-          <legend>Forma de pagamento</legend>
-          <label class="opcao">
-            <input v-model="metodoPagamento" type="radio" value="PIX" :disabled="enviando" />
-            PIX
-          </label>
-          <label class="opcao">
-            <input v-model="metodoPagamento" type="radio" value="CARTAO" :disabled="enviando" />
-            Cartão
-          </label>
+        <fieldset class="campo grupo" :class="{ 'campo--erro': errosCampo.metodoPagamento }">
+          <legend class="grupo__rotulo">Forma de pagamento</legend>
+          <div class="opcoes">
+            <label class="opcao">
+              <input v-model="metodoPagamento" type="radio" value="PIX" :disabled="enviando" />
+              PIX
+            </label>
+            <label class="opcao">
+              <input v-model="metodoPagamento" type="radio" value="CARTAO" :disabled="enviando" />
+              Cartão
+            </label>
+          </div>
           <span v-if="errosCampo.metodoPagamento" class="campo__erro">
             {{ errosCampo.metodoPagamento }}
           </span>
@@ -207,23 +209,45 @@ form {
   max-width: var(--largura-form);
 }
 
-fieldset.campo {
+.grupo {
   border: 0;
   padding: 0;
   margin: 0;
+  min-width: 0;
 }
 
-fieldset.campo legend {
+.grupo__rotulo {
+  padding: 0;
   font-size: var(--fs-sm);
   font-weight: 600;
-  margin-bottom: var(--sp-2);
+}
+
+.opcoes {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
 }
 
 .opcao {
+  flex: 1;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--sp-2);
-  font-weight: 400;
+  padding: var(--sp-3);
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  cursor: pointer;
+}
+
+.opcao input {
+  width: auto;
+  margin: 0;
+}
+
+.opcao:has(input:checked) {
+  border-color: var(--cor-tinta);
+  box-shadow: inset 0 0 0 1px var(--cor-tinta);
 }
 
 .lgpd {

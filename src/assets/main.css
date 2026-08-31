@@ -95,7 +95,8 @@
   font-weight: 600;
 }
 
-.campo input,
+/* Campos de texto — exclui radio/checkbox, que têm layout próprio (.opcao). */
+.campo input:not([type='radio']):not([type='checkbox']),
 .campo select,
 .campo textarea {
   width: 100%;
@@ -107,7 +108,7 @@
   border-radius: var(--raio-sm);
 }
 
-.campo input:focus,
+.campo input:not([type='radio']):not([type='checkbox']):focus,
 .campo select:focus,
 .campo textarea:focus {
   outline: 2px solid var(--cor-tinta);
@@ -115,7 +116,7 @@
   border-color: var(--cor-tinta);
 }
 
-.campo--erro input,
+.campo--erro input:not([type='radio']):not([type='checkbox']),
 .campo--erro select,
 .campo--erro textarea {
   border-color: var(--cor-erro);
