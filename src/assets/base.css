@@ -1,0 +1,114 @@
+/**
+ * Design tokens — paleta MONOCROMÁTICA (preto / branco / cinza).
+ * Sem cor de destaque: hierarquia por peso, tamanho e contraste.
+ * Verde/vermelho aparecem SÓ como feedback de estado (sucesso/erro).
+ * Ver docs/guiaFrontend.md §2 "Identidade visual".
+ */
+
+:root {
+  /* Tinta e superfícies */
+  --cor-tinta: #111111; /* texto principal, botão primário */
+  --cor-tinta-suave: #3d3d3d; /* texto sobre fundo claro, hover de link */
+  --cor-muted: #6b6b6b; /* texto secundário, legendas */
+  --cor-fraca: #9a9a9a; /* placeholder, texto desabilitado */
+  --cor-borda: #e4e4e4;
+  --cor-borda-forte: #cfcfcf;
+  --cor-superficie: #ffffff; /* cards, inputs */
+  --cor-fundo: #fafafa; /* fundo da página */
+  --cor-fundo-alt: #f0f0f0; /* zebra de tabela, hover de linha */
+
+  /* Feedback de estado (únicas cores do sistema) */
+  --cor-sucesso: #1a7f37;
+  --cor-sucesso-fundo: #eaf6ec;
+  --cor-erro: #c62828;
+  --cor-erro-fundo: #fdecec;
+  --cor-aviso: #8a6d00;
+  --cor-aviso-fundo: #fbf3da;
+
+  /* Tipografia */
+  --fonte-base:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+  --fs-2xl: 2.25rem;
+
+  /* Espaçamento (escala de 4px) */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  /* Raio e sombra */
+  --raio-sm: 4px;
+  --raio-md: 8px;
+  --raio-lg: 12px;
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --sombra-2: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* Layout */
+  --largura-conteudo: 1080px;
+  --largura-form: 440px;
+  --altura-cabecalho: 60px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--fonte-base);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  color: var(--cor-tinta);
+  background-color: var(--cor-fundo);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--cor-tinta);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--cor-tinta-suave);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cor-tinta);
+  outline-offset: 2px;
+}
