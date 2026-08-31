@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { listarEventos } from '@/services/admin'
 import { tratarErro } from '@/services/api'
 import type { EventoAdmin } from '@/types/api'
 import { formatarDataHora } from '@/utils/formato'
 
+const route = useRoute()
+
 const eventos = ref<EventoAdmin[]>([])
 const carregando = ref(true)
 const erro = ref('')
+const criadoAgora = ref(typeof route.query.criado === 'string')
 
 async function carregar() {
   carregando.value = true
@@ -28,8 +32,12 @@ onMounted(carregar)
   <section class="pilha">
     <div class="cabecalho-secao">
       <h1>Eventos</h1>
-      <!-- botão "Novo evento" entra no próximo passo -->
+      <RouterLink :to="{ name: 'admin-evento-novo' }" class="btn btn--primario">Novo evento</RouterLink>
     </div>
+
+    <p v-if="criadoAgora" class="alerta alerta--sucesso">
+      Evento cadastrado. Adicione um lote para começar a vender.
+    </p>
 
     <p v-if="carregando" class="texto-muted">Carregando…</p>
     <p v-else-if="erro" class="alerta alerta--erro">{{ erro }}</p>
@@ -68,6 +76,10 @@ onMounted(carregar)
 
 .cabecalho-secao h1 {
   font-size: var(--fs-xl);
+}
+
+.cabecalho-secao .btn {
+  text-decoration: none;
 }
 
 .tabela {

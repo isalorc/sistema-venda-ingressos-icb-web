@@ -47,6 +47,16 @@ export function formatarData(iso: string): string {
   return `${dd}/${mm}/${p.ano}`
 }
 
+/**
+ * Normaliza o valor de um `<input type="datetime-local">`
+ * ("2026-12-20T19:00") para o formato da API sem fuso ("2026-12-20T19:00:00").
+ * Se já vier com segundos, mantém. Valor vazio devolve "".
+ */
+export function paraDataHoraApi(valorInput: string): string {
+  if (!valorInput) return ''
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(valorInput) ? `${valorInput}:00` : valorInput
+}
+
 const FORMATADOR_MOEDA = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',

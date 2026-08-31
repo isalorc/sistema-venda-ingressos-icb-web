@@ -25,6 +25,11 @@ const router = createRouter({
           name: 'admin-eventos',
           component: () => import('@/views/admin/EventosView.vue'),
         },
+        {
+          path: 'eventos/novo',
+          name: 'admin-evento-novo',
+          component: () => import('@/views/admin/EventoNovoView.vue'),
+        },
       ],
     },
 
