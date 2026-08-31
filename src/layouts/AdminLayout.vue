@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import Toast from 'primevue/toast'
 import { useAuthStore } from '@/stores/auth'
 import logoIcb from '@/assets/logo-icb.png'
 
@@ -31,8 +30,6 @@ function sair() {
     <main class="admin__conteudo container">
       <RouterView />
     </main>
-
-    <Toast position="bottom-right" />
   </div>
 </template>
 
