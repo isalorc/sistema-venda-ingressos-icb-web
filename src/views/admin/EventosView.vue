@@ -2,8 +2,14 @@
 import { onMounted, ref } from 'vue'
 import { listarEventos } from '@/services/admin'
 import { tratarErro } from '@/services/api'
-import type { EventoAdmin } from '@/types/api'
-import { formatarDataHora } from '@/utils/formato'
+import type { EventoAdmin, StatusVendas } from '@/types/api'
+import { formatarPeriodo } from '@/utils/formato'
+
+const ROTULO_STATUS_VENDAS: Record<StatusVendas, string> = {
+  A_VENDA: 'À venda',
+  AGENDADA: 'Agendada',
+  ENCERRADA: 'Encerrada',
+}
 
 const eventos = ref<EventoAdmin[]>([])
 const carregando = ref(true)
@@ -40,6 +46,7 @@ onMounted(carregar)
         <tr>
           <th>Evento</th>
           <th>Data</th>
+          <th>Vendas</th>
           <th>Lotes</th>
           <th>Ingressos</th>
           <th><span class="visualmente-oculto">Ações</span></th>
@@ -49,9 +56,11 @@ onMounted(carregar)
         <tr v-for="evento in eventos" :key="evento.id">
           <td>
             {{ evento.nome }}
-            <span v-if="evento.jaOcorreu" class="etiqueta">já ocorreu</span>
+            <span v-if="evento.cancelado" class="etiqueta">cancelado</span>
+            <span v-else-if="evento.jaOcorreu" class="etiqueta">já ocorreu</span>
           </td>
-          <td>{{ formatarDataHora(evento.dataHora) }}</td>
+          <td>{{ formatarPeriodo(evento.dataHora, evento.dataFim) }}</td>
+          <td>{{ ROTULO_STATUS_VENDAS[evento.statusVendas] }}</td>
           <td>{{ evento.quantidadeLotes }}</td>
           <td>{{ evento.ingressosDisponiveis }} / {{ evento.ingressosTotais }}</td>
           <td class="acoes-linha">

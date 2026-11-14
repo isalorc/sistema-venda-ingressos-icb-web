@@ -11,6 +11,8 @@ const router = useRouter()
 const nome = ref('')
 const descricao = ref('')
 const dataHora = ref('')
+const dataFim = ref('')
+const imagemUrl = ref('')
 
 const erro = ref('')
 const errosCampo = ref<Record<string, string>>({})
@@ -36,6 +38,9 @@ async function salvar() {
     }
     const descricaoLimpa = descricao.value.trim()
     if (descricaoLimpa) payload.descricao = descricaoLimpa
+    if (dataFim.value) payload.dataFim = paraDataHoraApi(dataFim.value)
+    const imagemLimpa = imagemUrl.value.trim()
+    if (imagemLimpa) payload.imagemUrl = imagemLimpa
 
     const { id } = await criarEvento(payload)
     // Evento sem lote não vende — encaminha direto para criar o primeiro lote.
@@ -72,7 +77,7 @@ async function salvar() {
       </div>
 
       <div class="campo" :class="{ 'campo--erro': errosCampo.dataHora }">
-        <label for="dataHora">Data e hora</label>
+        <label for="dataHora">Data e hora de início</label>
         <input
           id="dataHora"
           v-model="dataHora"
@@ -82,6 +87,31 @@ async function salvar() {
           :disabled="enviando"
         />
         <span v-if="errosCampo.dataHora" class="campo__erro">{{ errosCampo.dataHora }}</span>
+      </div>
+
+      <div class="campo" :class="{ 'campo--erro': errosCampo.dataFim }">
+        <label for="dataFim">Data e hora de término <span class="texto-muted">(opcional)</span></label>
+        <input
+          id="dataFim"
+          v-model="dataFim"
+          type="datetime-local"
+          :min="dataHora || minDataHora"
+          :disabled="enviando"
+        />
+        <span v-if="errosCampo.dataFim" class="campo__erro">{{ errosCampo.dataFim }}</span>
+        <span class="campo__ajuda texto-muted">Deixe em branco para um evento pontual.</span>
+      </div>
+
+      <div class="campo" :class="{ 'campo--erro': errosCampo.imagemUrl }">
+        <label for="imagemUrl">URL do banner <span class="texto-muted">(opcional)</span></label>
+        <input
+          id="imagemUrl"
+          v-model="imagemUrl"
+          type="url"
+          placeholder="https://…"
+          :disabled="enviando"
+        />
+        <span v-if="errosCampo.imagemUrl" class="campo__erro">{{ errosCampo.imagemUrl }}</span>
       </div>
 
       <div class="acoes">
@@ -97,6 +127,10 @@ async function salvar() {
 <style scoped>
 .cabecalho-secao h1 {
   font-size: var(--fs-xl);
+}
+
+.campo__ajuda {
+  font-size: var(--fs-xs);
 }
 
 .acoes {

@@ -4,8 +4,14 @@ import { useToast } from 'primevue/usetoast'
 import { criarLote } from '@/services/admin'
 import { consultarEvento } from '@/services/eventos'
 import { tratarErro } from '@/services/api'
-import type { EventoDetalhe, NovoLote } from '@/types/api'
-import { formatarDataHora, formatarDinheiro } from '@/utils/formato'
+import type { EventoDetalhe, Lote, NovoLote } from '@/types/api'
+import {
+  formatarData,
+  formatarDataHora,
+  formatarDinheiro,
+  paraDataHoraApi,
+  paraInputDataHora,
+} from '@/utils/formato'
 
 const props = defineProps<{ eventoId: string }>()
 const eventoId = computed(() => Number(props.eventoId))
@@ -19,10 +25,30 @@ const erroCarga = ref('')
 const nome = ref('')
 const preco = ref<number | null>(null)
 const quantidadeTotal = ref<number | null>(null)
+const inicioVendas = ref('')
+const fimVendas = ref('')
 
 const erro = ref('')
 const errosCampo = ref<Record<string, string>>({})
 const enviando = ref(false)
+
+/** Limite superior das janelas de venda: o início do evento. */
+const maxJanela = computed(() => paraInputDataHora(evento.value?.dataHora) || undefined)
+
+const ROTULO_STATUS_LOTE: Record<Lote['status'], string> = {
+  A_VENDA: 'À venda',
+  AGENDADO: 'Agendado',
+  ENCERRADO: 'Encerrado',
+  ESGOTADO: 'Esgotado',
+  NA_FILA: 'Na fila',
+}
+
+function rotuloStatusLote(lote: Lote): string {
+  if (lote.status === 'AGENDADO' && lote.inicioVendas) {
+    return `Agendado — abre ${formatarData(lote.inicioVendas)}`
+  }
+  return ROTULO_STATUS_LOTE[lote.status]
+}
 
 async function carregarEvento() {
   carregando.value = true
@@ -40,6 +66,8 @@ function limparForm() {
   nome.value = ''
   preco.value = null
   quantidadeTotal.value = null
+  inicioVendas.value = ''
+  fimVendas.value = ''
   errosCampo.value = {}
 }
 
@@ -53,6 +81,9 @@ async function salvar() {
       preco: Number(preco.value),
       quantidadeTotal: Number(quantidadeTotal.value),
     }
+    if (inicioVendas.value) payload.inicioVendas = paraDataHoraApi(inicioVendas.value)
+    if (fimVendas.value) payload.fimVendas = paraDataHoraApi(fimVendas.value)
+
     await criarLote(eventoId.value, payload)
     toast.add({
       severity: 'success',
@@ -101,6 +132,7 @@ onMounted(carregarEvento)
             <th>Lote</th>
             <th>Preço</th>
             <th>Disponível</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -108,6 +140,7 @@ onMounted(carregarEvento)
             <td>{{ lote.nome }}</td>
             <td>{{ formatarDinheiro(lote.preco) }}</td>
             <td>{{ lote.quantidadeDisponivel }}</td>
+            <td>{{ rotuloStatusLote(lote) }}</td>
           </tr>
         </tbody>
       </table>
@@ -154,6 +187,37 @@ onMounted(carregarEvento)
           }}</span>
         </div>
 
+        <div class="campo" :class="{ 'campo--erro': errosCampo.inicioVendas }">
+          <label for="inicioVendas">Início das vendas <span class="texto-muted">(opcional)</span></label>
+          <input
+            id="inicioVendas"
+            v-model="inicioVendas"
+            type="datetime-local"
+            :max="maxJanela"
+            :disabled="enviando"
+          />
+          <span v-if="errosCampo.inicioVendas" class="campo__erro">{{ errosCampo.inicioVendas }}</span>
+          <span class="campo__ajuda texto-muted">
+            Antes dessa data o lote fica "agendado". Em branco: entra na fila só pela ordem e pelo estoque.
+          </span>
+        </div>
+
+        <div class="campo" :class="{ 'campo--erro': errosCampo.fimVendas }">
+          <label for="fimVendas">Fim das vendas <span class="texto-muted">(opcional)</span></label>
+          <input
+            id="fimVendas"
+            v-model="fimVendas"
+            type="datetime-local"
+            :min="inicioVendas || undefined"
+            :max="maxJanela"
+            :disabled="enviando"
+          />
+          <span v-if="errosCampo.fimVendas" class="campo__erro">{{ errosCampo.fimVendas }}</span>
+          <span class="campo__ajuda texto-muted">
+            Ao passar dessa data o lote encerra e o próximo assume, mesmo que sobre ingresso.
+          </span>
+        </div>
+
         <div class="acoes">
           <button type="submit" class="btn btn--primario" :disabled="enviando">
             {{ enviando ? 'Salvando…' : 'Adicionar lote' }}
@@ -187,6 +251,10 @@ onMounted(carregarEvento)
 
 .titulo-form {
   font-size: var(--fs-lg);
+}
+
+.campo__ajuda {
+  font-size: var(--fs-xs);
 }
 
 .tabela {

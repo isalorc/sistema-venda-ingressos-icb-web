@@ -68,9 +68,21 @@ const router = createRouter({
           props: true,
         },
         {
+          path: 'eventos/:eventoId/editar',
+          name: 'admin-evento-editar',
+          component: () => import('@/views/admin/EventoEditarView.vue'),
+          props: true,
+        },
+        {
           path: 'eventos/:eventoId/lotes/novo',
           name: 'admin-lote-novo',
           component: () => import('@/views/admin/LoteNovoView.vue'),
+          props: true,
+        },
+        {
+          path: 'eventos/:eventoId/lotes/:loteId/editar',
+          name: 'admin-lote-editar',
+          component: () => import('@/views/admin/LoteEditarView.vue'),
           props: true,
         },
         {
