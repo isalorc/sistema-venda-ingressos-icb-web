@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import QrCodeIngresso from '@/components/QrCodeIngresso.vue'
 import { consultarPedido } from '@/services/clientes'
 import { tratarErro } from '@/services/api'
 import type { PedidoClienteDetalhe } from '@/types/api'
@@ -133,7 +134,7 @@ onUnmounted(() => {
         </div>
       </div>
       <p v-else-if="situacao === 'PAGO'" class="alerta alerta--sucesso">
-        Pagamento confirmado. Apresente o código de cada ingresso na entrada do evento.
+        Pagamento confirmado. Apresente o QR code de cada ingresso na entrada do evento.
       </p>
       <p v-else-if="situacao === 'EXPIRADO'" class="alerta alerta--erro">
         A reserva expirou antes da confirmação do pagamento e os ingressos foram liberados.
@@ -166,6 +167,10 @@ onUnmounted(() => {
             </div>
             <div class="ingresso__codigo">
               <template v-if="ingresso.codigoQr">
+                <QrCodeIngresso
+                  :codigo="ingresso.codigoQr"
+                  :descricao="`QR code do ingresso de ${ingresso.nomeParticipante ?? 'participante'}`"
+                />
                 <span class="texto-muted rotulo">Código do ingresso</span>
                 <code>{{ ingresso.codigoQr }}</code>
               </template>
@@ -270,6 +275,10 @@ h2 {
   flex-direction: column;
   gap: var(--sp-1);
   min-width: 0;
+}
+
+.ingresso__codigo {
+  align-items: flex-start;
 }
 
 .ingresso__codigo code {
