@@ -235,7 +235,7 @@ não há evento para vender); (3) fluxo do cliente — listagem → detalhe → 
 | # | Tela | Endpoint | Notas |
 |---|---|---|---|
 | 1 | **Listagem de eventos** | `GET /api/eventos` | Cards com `nome`, `descricao`, `dataHora`, `menorPreco`, `ingressosDisponiveis`. Só eventos futuros com estoque. Array vazio → estado "nenhum evento". |
-| 2 | **Detalhe do evento** | `GET /api/eventos/{id}` | Retorna **todos** os lotes, inclusive esgotados (`quantidadeDisponivel: 0`). Desabilitar no UI os lotes sem estoque. `404` → tela "não encontrado". |
+| 2 | **Detalhe do evento** | `GET /api/eventos/{id}` | Retorna **todos** os lotes com o `status` derivado (virada de lote). Só o lote `A_VENDA` fica selecionável; os demais (`ESGOTADO`, `ENCERRADO`, `AGENDADO`, `NA_FILA`) aparecem apagados, com etiqueta. `cancelado: true` → esconde a compra. `404` → tela "não encontrado". |
 | 3 | **Checkout (dados + método)** | — | Formulário: `nome`, `email` (válido), `telefone`, `metodoPagamento` (`PIX`/`CARTAO`). |
 | 4 | **Criar a compra** | `POST /api/compras` | Body `{ loteId, nome, email, telefone, metodoPagamento }` → `201` com `{ pedidoId, ingressoId, valorTotal, statusPedido, urlPagamento, qrCodePix }`. Tratar `409` (esgotou entre o passo 2 e agora) recarregando o detalhe. `422` → destacar `camposInvalidos`. |
 | 5 | **Tela de pagamento** | — | `PIX`: exibir `qrCodePix`. `CARTAO`: `qrCodePix` vem `null`, redirecionar/mostrar `urlPagamento`. Reserva vale 15 min (RN-2). **Hoje o gateway é fake** — usar placeholders realistas (ver §6). |
@@ -340,14 +340,20 @@ Todo erro segue o envelope `ErroResponse`:
 // src/types/api.ts
 export type MetodoPagamento = "PIX" | "CARTAO";
 export type StatusPedido = "PENDENTE" | "PAGO" | "CANCELADO" | "EXPIRADO";
+export type StatusLote = "A_VENDA" | "AGENDADO" | "ENCERRADO" | "ESGOTADO" | "NA_FILA";
+export type StatusVendas = "A_VENDA" | "AGENDADA" | "ENCERRADA";
 
 export interface EventoResumo {
   id: number;
   nome: string;
   descricao: string | null;
-  dataHora: string;            // ISO-8601 sem fuso
+  dataHora: string;            // ISO-8601 sem fuso (início)
+  dataFim: string | null;      // null = evento pontual
+  imagemUrl: string | null;    // banner; null = sem imagem
   menorPreco: number;
   ingressosDisponiveis: number;
+  statusVendas: StatusVendas;
+  aberturaVendas: string | null; // próximo lote a abrir; só em AGENDADA
 }
 
 export interface Lote {
@@ -355,6 +361,9 @@ export interface Lote {
   nome: string;
   preco: number;
   quantidadeDisponivel: number;
+  status: StatusLote;          // só A_VENDA é comprável
+  inicioVendas: string | null;
+  fimVendas: string | null;
 }
 
 export interface EventoDetalhe {
@@ -362,6 +371,9 @@ export interface EventoDetalhe {
   nome: string;
   descricao: string | null;
   dataHora: string;
+  dataFim: string | null;
+  imagemUrl: string | null;
+  cancelado: boolean;          // true = esconde a compra
   lotes: Lote[];
 }
 
@@ -385,8 +397,14 @@ export interface CompraCriada {
 export interface LoginAdmin { email: string; senha: string; }
 export interface TokenAdmin { token: string; tipo: "Bearer"; expiraEmSegundos: number; }
 
-export interface NovoEvento { nome: string; descricao?: string; dataHora: string; }
-export interface NovoLote { nome: string; preco: number; quantidadeTotal: number; }
+export interface NovoEvento {
+  nome: string; descricao?: string; dataHora: string;
+  dataFim?: string; imagemUrl?: string;
+}
+export interface NovoLote {
+  nome: string; preco: number; quantidadeTotal: number;
+  inicioVendas?: string; fimVendas?: string;
+}
 
 export interface Inscrito {
   nomeCliente: string;
