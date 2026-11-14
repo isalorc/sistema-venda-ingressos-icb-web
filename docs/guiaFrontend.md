@@ -10,6 +10,12 @@ demais arquivos de `docs/` sob a ótica do que o front precisa saber, registra a
 > [`guiaApiFrontend.md`](guiaApiFrontend.md) (contrato REST — fonte da verdade do
 > contrato), [`ia/agent.md`](ia/agent.md).
 > Contrato em runtime: **Swagger UI** do backend em `/swagger-ui.html` (perfil `dev`).
+>
+> Os arquivos de `docs/` que descrevem o backend (`regrasDeNegocio.md`,
+> `analiseDeRequisitos.md`, `documentacaoProjeto.md`, `guiaApiFrontend.md`,
+> `viradaDeLote.md`, `gestaoDeEventos.md`, os `.drawio` e a collection do Postman)
+> são **cópias** do repositório do backend, que é a fonte. Ao mudar um deles, mude
+> lá e copie para cá.
 
 ---
 
@@ -20,8 +26,9 @@ demais arquivos de `docs/` sob a ótica do que o front precisa saber, registra a
   entrega do TCC; o backend foi feito primeiro apenas por sequenciamento.
 - Consome a API REST descrita em [`guiaApiFrontend.md`](guiaApiFrontend.md) e
   **nada mais** — sem SSR, sem cookie, sem CSRF.
-- Estado atual: repositório praticamente vazio (só `docs/` + `README.md`). O
-  código do front começa do zero.
+- **Estado atual:** vitrine pública, área do cliente (conta, compra de até 5
+  ingressos, meus pedidos com QR code) e painel admin completo (eventos, lotes e
+  inscritos). Detalhe na [§5](#5-mapa-de-telas--endpoints).
 
 ### Contexto de negócio (resumo)
 
@@ -35,14 +42,14 @@ Baixada Santista; liderança do Bp. A.C. Palaroni. Página atual de eventos:
 `sympla.com.br/produtor/edivenc2026`. Site institucional: `icbsantos.com.br`
 (paleta azul + branco, estética moderna e minimalista).
 
-Escopo enxuto: **sem mapa/numeração de assentos, sem múltiplos locais, 1 ingresso
-por compra, cliente sem cadastro**.
+Escopo enxuto: **sem mapa/numeração de assentos, sem múltiplos locais, 1 a 5
+ingressos por pedido (um nome por ingresso), conta obrigatória para comprar**.
 
-### Duas audiências
+### Três áreas
 
-| Cliente (público, sem login) | Administrador (login único, JWT) |
-|---|---|
-| Consulta eventos e compra 1 ingresso informando nome/e-mail/telefone na hora. Não há cadastro. | Cadastra eventos e lotes, acompanha inscritos. **Um único admin**, sem tela de cadastro de admin. |
+| Vitrine (pública) | Área do cliente (login do cliente) | Painel admin (login único) |
+|---|---|---|
+| Lista os eventos e mostra o detalhe com os lotes. Não exige login. | Criar conta / entrar, comprar de 1 a 5 ingressos com o nome de cada participante, pagar, acompanhar os pedidos e ver o QR code de cada ingresso. | Cadastra, edita, cancela e exclui eventos e lotes; acompanha os inscritos. **Um único admin**, sem tela de cadastro de admin. |
 
 ---
 
@@ -71,60 +78,51 @@ coeso e velocidade de MVP** para um desenvolvedor que vem do backend.
 
 **Angular** — o mais "cara de Java" (injeção de dependência, services, classes,
 CLI que gera scaffolding, estrutura rígida). Custo: mais verbosidade e curva
-maior (RxJS). Um diagrama antigo (`casoUsoEArquitetura.drawio`) citava "Painel
-Angular", mas o restante da documentação convergiu para Vite. Fica como plano B
-caso se prefira estrutura mais opinativa.
+maior (RxJS). Versões antigas do `casoUsoEArquitetura.drawio` citavam "Painel
+Angular"; o diagrama já foi corrigido para Vue.
 
 **React** não foi escolhido: exige montar a stack peça a peça (roteamento, cache
 de dados, formulários) e tem mais formas de errar — peso desnecessário para quem
 não é de front.
 
-### Stack completa
+### Stack em uso
 
 | Papel | Escolha | Observação |
 |---|---|---|
 | Framework | **Vue 3** (Composition API, `<script setup>`) | |
 | Build / dev server | **Vite** | porta `5173` (já liberada no CORS do backend) |
-| Linguagem | **TypeScript** | |
-| Roteamento | **Vue Router** | rotas públicas + área `/admin` protegida por *navigation guard* |
-| Estado | **Pinia** | store de autenticação (token do admin) |
-| HTTP | **Axios** | *interceptor* injeta `Authorization: Bearer`; trata `401` → volta ao login |
-| Componentes de UI | **PrimeVue** + **PrimeIcons** | formulários, `DataTable` (inscritos), `Toast` (erros) |
-| Validação de formulário | **vee-validate** + **zod** | opcional; começa com validação simples se preferir |
-| Testes | **Vitest** + **@vue/test-utils** | alinhado ao Vite |
-| Lint/format | **ESLint** + **Prettier** | |
+| Linguagem | **TypeScript** | `npm run type-check` (vue-tsc) |
+| Roteamento | **Vue Router** | rotas públicas, rotas do cliente (`meta.requiresCliente`) e área `/admin` protegida por *navigation guard* |
+| Estado | **Pinia** | `auth` (token do admin), `cliente` (token e perfil do cliente), `compra` (lote, quantidade e resultado da compra em andamento) |
+| HTTP | **Axios** | um *interceptor* escolhe o token certo pela rota e trata `401` de cada papel |
+| Componentes de UI | **PrimeVue** + **PrimeIcons** | `Toast` (erros) e componentes pontuais; o resto é CSS próprio |
+| QR code | **qrcode** | gera a imagem do QR de cada ingresso no navegador, sem serviço externo |
+| Testes | **Vitest** + **@vue/test-utils** | ⚠️ a configuração do Vitest está quebrada (`formato.spec.ts` falha ao carregar); a verificação hoje é type-check + lint + build |
+| Lint/format | **ESLint** + **oxlint** + **Prettier** | |
 
-### Scaffold inicial
-
-```bash
-npm create vue@latest sistema-venda-ingressos-icb-web
-# marcar: TypeScript, Vue Router, Pinia, Vitest, ESLint, Prettier
-cd sistema-venda-ingressos-icb-web
-npm install
-npm install axios primevue primeicons
-npm run dev            # sobe em http://localhost:5173
-```
-
-> Se o scaffold do Vue exigir uma pasta vazia, gerar em um diretório temporário e
-> mover o conteúdo para a raiz deste repositório (preservando `docs/` e `.git/`).
-
-### Estrutura de pastas sugerida (enxuta)
+### Estrutura de pastas
 
 ```
 src/
   main.ts
   App.vue
-  router/            # definição de rotas + guard de admin
-  stores/            # Pinia — auth.ts
-  services/          # api.ts (instância Axios) + um módulo por recurso
-  types/             # interfaces do contrato da API (Evento, Lote, Compra, ...)
-  views/             # páginas roteáveis
-    cliente/         # Home, EventoDetalhe, Checkout, Pagamento, PosCompra
-    admin/           # Login, EventoNovo, LoteNovo, Inscritos
-  components/         # componentes reutilizáveis (CardEvento, ListaLotes, ...)
+  router/index.ts      # rotas + guards (cliente e admin)
+  layouts/             # PublicoLayout (vitrine e cliente), AdminLayout
+  stores/              # Pinia — auth.ts (admin), cliente.ts, compra.ts
+  services/            # api.ts (Axios + interceptors) e um módulo por recurso:
+                       #   eventos.ts, compras.ts, clientes.ts, admin.ts
+  types/api.ts         # interfaces do contrato da API
+  utils/               # formato.ts (datas e R$), pedido.ts (status), telefone.ts (máscara e validação)
+  components/          # QrCodeIngresso.vue
+  views/
+    cliente/           # Home, EventoDetalhe, Entrar, Checkout, Pagamento,
+                       # MeusPedidos, PedidoCliente
+    admin/             # Login, Eventos, EventoNovo, EventoDetalheAdmin,
+                       # EventoEditar, LoteNovo, LoteEditar, Inscritos
+    NotFoundView.vue
   assets/
-    base.css         # reset + design tokens em :root (--cor-primaria, --espaco-1, ...)
-    main.css         # @import "./base.css" + estilos globais (body, tipografia, links)
+    base.css           # reset + design tokens em :root
+    main.css           # estilos globais e utilitários (.btn, .campo, .alerta, .selo, ...)
 ```
 
 ### Onde fica o CSS
@@ -132,27 +130,23 @@ src/
 | Finalidade | Onde | Observação |
 |---|---|---|
 | Estilo de um componente | bloco `<style scoped>` dentro do próprio `.vue` | `scoped` isola o CSS — não vaza para outros componentes. É a maior parte do CSS. |
-| Reset, tipografia base, **design tokens** (cores/espaçamentos como variáveis CSS) | `src/assets/base.css` + `src/assets/main.css`, importados **uma vez** em `src/main.ts` (`import "./assets/main.css"`) | tokens em `:root { --cor-primaria: ... }`, usados por todos os componentes. |
-| Tema dos componentes do PrimeVue | import do preset/tema em `src/main.ts` (+ `primeicons`) | usar preset neutro (ou modo *unstyled*) e sobrescrever os tokens do tema para a paleta monocromática. |
-
-Sass é opcional (`npm add -D sass` → `<style scoped lang="scss">`); CSS puro com
-variáveis `:root` já basta para o MVP. Não se usa CSS-in-JS no ecossistema Vue.
+| Reset, tipografia base, **design tokens** (cores/espaçamentos como variáveis CSS) | `src/assets/base.css` + `src/assets/main.css`, importados **uma vez** em `src/main.ts` | tokens em `:root { --cor-tinta: ... }`, usados por todos os componentes. |
+| Tema dos componentes do PrimeVue | import do preset/tema em `src/main.ts` (+ `primeicons`) | preset neutro, com os tokens sobrescritos para a paleta monocromática. |
 
 ### Identidade visual
 
-- **Logo:** `docs/logo icb.png` (versão escolhida pela usuária) — marca monoline de
-  uma "casa"/chevron dentro de um círculo, preto e branco, traço fino, estilo
-  moderno e minimalista. Copiar para `src/assets/` no início do projeto.
+- **Logo:** `docs/logo icb.png`, copiado para `src/assets/logo-icb.png` — marca
+  monoline de uma "casa"/chevron dentro de um círculo, preto e branco, traço fino.
 - **Direção definida:** **totalmente monocromático** — preto, branco e cinza,
   **sem cor de destaque**. Botão primário preto. Fundo claro, muito espaço em
-  branco, tipografia limpa (ex.: Inter), estilo editorial/minimalista, coerente
-  com o logo escolhido.
-- Tokens em `:root`: `--cor-tinta` (quase-preto, ~`#111`), `--cor-fundo` (branco),
-  `--cor-superficie` (`#fafafa`), `--cor-borda` (`#e5e5e5`), `--cor-muted`
-  (cinza texto secundário), `--cor-sucesso` / `--cor-erro` (únicas cores
-  toleradas — só para feedback de estado), escala de espaçamento e raio de borda.
+  branco, tipografia limpa, estilo editorial/minimalista.
+- Tokens em `:root`: `--cor-tinta` (quase-preto), `--cor-fundo` (branco),
+  `--cor-superficie`, `--cor-borda`, `--cor-muted` (texto secundário),
+  `--cor-sucesso` / `--cor-erro` (únicas cores toleradas — só para feedback de
+  estado), escala de espaçamento e raio de borda.
 - Estados (foco, hover, seleção) resolvidos com preto/cinza + peso/tamanho/borda, não com cor.
-- **Pendente:** fonte definitiva; favicon (gerar a partir do logo).
+- O QR code é sempre preto sobre **fundo branco**, mesmo no tema escuro, para os
+  leitores conseguirem ler.
 
 ## 3. Configuração de ambiente
 
@@ -162,7 +156,7 @@ variáveis `:root` já basta para o MVP. Não se usa CSS-in-JS no ecossistema Vu
 | Porta do front | `http://localhost:5173` | a definir |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | desligado |
 
-Usar variável de ambiente do Vite:
+Variável de ambiente do Vite:
 
 ```
 # .env.development
@@ -172,29 +166,29 @@ VITE_API_BASE_URL=http://localhost:8080
 VITE_API_BASE_URL=https://<host-do-backend>
 ```
 
-```ts
-// src/services/api.ts
-import axios from "axios";
-export const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
-```
-
 **CORS:** o backend libera `http://localhost:5173`, métodos
 `GET, POST, PUT, PATCH, DELETE, OPTIONS`, todos os headers, e
 **`allowCredentials: false`** — não usar cookie; autenticação só pelo header
 `Authorization`. Se rodar o front em outra porta, ajustar `CORS_ORIGINS` no
 backend, senão o navegador bloqueia as chamadas.
 
-### Subir o backend para desenvolver
+### Subir para desenvolver
 
 ```bash
 # no repositório do backend — perfil dev: persistência em memória, zera ao reiniciar
 mvn spring-boot:run
+
+# neste repositório
+npm install
+npm run dev            # http://localhost:5173
 ```
 
-O perfil `dev` **apaga os dados a cada restart**. Semear um evento comprável pela
-collection do Postman em [`postman/`](postman/) (faz login, cria evento/lote,
-compra e simula o webhook) ou pela sequência de `curl` em
-[`guiaApiFrontend.md` §10](guiaApiFrontend.md).
+O perfil `dev` **apaga os dados a cada restart** (inclusive as contas de cliente).
+Semear um evento comprável pela collection do Postman em [`postman/`](postman/)
+(faz login de admin, cria evento/lote, cria conta de cliente, compra e simula o
+webhook) ou pela sequência de `curl` em [`guiaApiFrontend.md` §10](guiaApiFrontend.md).
+
+Antes de commitar: `npm run type-check`, `npm run lint` e `npm run build`.
 
 ---
 
@@ -204,19 +198,20 @@ Detalhe em [`regrasDeNegocio.md`](regrasDeNegocio.md).
 
 | Regra | O que é | Impacto no frontend |
 |---|---|---|
-| **RN-1** | 1 ingresso por pedido | Sem seletor de quantidade. `POST /api/compras` compra exatamente 1. |
-| **RN-2** | Reserva expira em **15 min** | Após o `201` da compra o ingresso fica `RESERVADO` e o estoque já caiu. Se não pagar em 15 min, um job libera e o pedido vira `EXPIRADO`. Comunicar o prazo na tela de pagamento (ex.: contador regressivo). |
+| **RN-1** | 1 a 5 ingressos por pedido, um nome por ingresso | O checkout tem seletor −/+ (máximo = menor entre 5 e o estoque do lote) e um campo de nome por ingresso; o primeiro vem preenchido com o nome do cliente. `MAX_INGRESSOS_POR_PEDIDO` em `types/api.ts` espelha `app.compra.max-ingressos-por-pedido`. |
+| **RN-2** | Reserva expira em **15 min** | Após o `201` da compra os ingressos ficam `RESERVADO`. O detalhe do pedido mostra contagem regressiva até `expiraEm`. Quando o prazo passa, as telas já mostram **"Reserva expirada"** (`utils/pedido.ts#statusEfetivo`), sem esperar o job do backend, que roda a cada ~1 min. |
 | **RN-3** | Métodos: `PIX` e `CARTAO` | Enum **em maiúsculas**, `CARTAO` **sem cedilha**. Valor fora da lista → `400`. |
-| **RN-4** | Cliente sem conta | Formulário pede nome, e-mail, telefone. O backend resolve/cria o usuário **pelo e-mail** (mesmo e-mail = mesmo cadastro). Ingresso entregue por e-mail. |
-| **RN-5** | Admin via JWT próprio | Token expira em **2h**, **sem refresh**. Guardar em memória / `sessionStorage` (nunca cookie). Expirou → refazer login. |
-| **RN-6** | QR só após pagamento aprovado | A resposta da compra **não** traz `codigoQr`. Ele é gerado quando o gateway confirma (webhook). O `codigoQr` só aparece na listagem admin de inscritos. |
+| **RN-4** | Conta obrigatória para comprar | Cadastro pede nome, e-mail, telefone (com máscara e validação: DDD + celular ou fixo) e senha (mín. 8). Quem tentar ir ao checkout sem login é levado a `/entrar?redirect=...` e volta para a compra depois. |
+| **RN-5** | Admin via JWT próprio | Token expira em **2h**, **sem refresh**. Guardado em `sessionStorage` (nunca cookie). Expirou → refazer login. |
+| **RN-6** | QR só após pagamento aprovado | A compra **não** traz QR. Quando o pedido vira `PAGO`, o detalhe do pedido mostra o **QR code em imagem** de cada ingresso (componente `QrCodeIngresso`), com o código em texto embaixo. |
 
 ### Confirmação de pagamento é assíncrona
 
 `POST /api/compras` **sempre** devolve `statusPedido: "PENDENTE"`. A virada para
 `PAGO` acontece depois, quando o gateway chama `POST /api/webhooks/pagamento` —
-**o frontend nunca chama esse endpoint**. Em dev, a confirmação é simulada via
-Postman/curl.
+**o frontend nunca chama esse endpoint**. Para refletir a mudança, o detalhe do
+pedido consulta o backend a cada 10 s e "Meus pedidos" a cada 15 s, enquanto
+houver pedido pendente. Em dev, a confirmação é simulada via Postman/curl.
 
 ---
 
@@ -225,38 +220,52 @@ Postman/curl.
 Contrato completo (corpos de request/response, códigos de erro) em
 [`guiaApiFrontend.md`](guiaApiFrontend.md).
 
-**Ordem de construção definida:** (1) scaffold do projeto + tokens de estilo;
-(2) **painel admin** — login → cadastrar evento → criar lote → inscritos (sem ele
-não há evento para vender); (3) fluxo do cliente — listagem → detalhe → checkout
-→ pagamento → pós-compra. Backend real rodando em `localhost:8080` desde o passo 2.
+### Vitrine (pública — sem token)
 
-### Fluxo do cliente (público — nenhuma rota exige token)
-
-| # | Tela | Endpoint | Notas |
+| Rota | Tela | Endpoint | Notas |
 |---|---|---|---|
-| 1 | **Listagem de eventos** | `GET /api/eventos` | Cards com `nome`, `descricao`, `dataHora`, `menorPreco`, `ingressosDisponiveis`. Só eventos futuros com estoque. Array vazio → estado "nenhum evento". |
-| 2 | **Detalhe do evento** | `GET /api/eventos/{id}` | Retorna **todos** os lotes com o `status` derivado (virada de lote). Só o lote `A_VENDA` fica selecionável; os demais (`ESGOTADO`, `ENCERRADO`, `AGENDADO`, `NA_FILA`) aparecem apagados, com etiqueta. `cancelado: true` → esconde a compra. `404` → tela "não encontrado". |
-| 3 | **Checkout (dados + método)** | — | Formulário: `nome`, `email` (válido), `telefone`, `metodoPagamento` (`PIX`/`CARTAO`). |
-| 4 | **Criar a compra** | `POST /api/compras` | Body `{ loteId, nome, email, telefone, metodoPagamento }` → `201` com `{ pedidoId, ingressoId, valorTotal, statusPedido, urlPagamento, qrCodePix }`. Tratar `409` (esgotou entre o passo 2 e agora) recarregando o detalhe. `422` → destacar `camposInvalidos`. |
-| 5 | **Tela de pagamento** | — | `PIX`: exibir `qrCodePix`. `CARTAO`: `qrCodePix` vem `null`, redirecionar/mostrar `urlPagamento`. Reserva vale 15 min (RN-2). **Hoje o gateway é fake** — usar placeholders realistas (ver §6). |
-| 6 | **Pós-compra (informativo)** | — | **Não há endpoint para o cliente consultar o status do pedido** (ver §6). Estado estático: "aguardando confirmação do pagamento — o ingresso chega no seu e-mail". Sem polling. |
+| `/` | **Listagem de eventos** | `GET /api/eventos` | Cards com banner, período, menor preço e status de vendas. Array vazio → estado "nenhum evento". |
+| `/eventos/:eventoId` | **Detalhe do evento** | `GET /api/eventos/{id}` | Todos os lotes com o `status` derivado (virada de lote). Só o lote `A_VENDA` é selecionável; os demais aparecem apagados, com etiqueta. `cancelado: true` → esconde a compra. `404` → "não encontrado". |
 
-### Fluxo do administrador
+### Área do cliente (token de cliente)
 
-| Tela | Endpoint | Token? | Notas |
+| Rota | Tela | Endpoint | Notas |
 |---|---|---|---|
-| **Login** | `POST /api/admin/login` | não | Body `{ email, senha }` → `{ token, tipo: "Bearer", expiraEmSegundos: 7200 }`. `401` → "e-mail ou senha inválidos". Dev: `admin@icb.local` / `admin123`. |
-| **Cadastrar evento** | `POST /api/admin/eventos` | **sim** | Body `{ nome, descricao?, dataHora }`. `dataHora` **no futuro**, formato `"2026-12-20T19:00:00"` (sem `Z`/offset). → `{ id }`. |
-| **Criar lote** | `POST /api/admin/eventos/{eventoId}/lotes` | **sim** | Body `{ nome, preco, quantidadeTotal }` (`preco ≥ 0`, 2 casas; `quantidadeTotal > 0`). Gera os N ingressos automaticamente. → `{ id }` (id do **lote**). |
-| **Ver inscritos** | `GET /api/admin/eventos/{eventoId}/inscritos` | **sim** | Só pedidos **pagos**. Lista `{ nomeCliente, emailCliente, telefoneCliente, loteId, nomeLote, pedidoId, codigoQr, dataCompra }`. Array vazio se ninguém pagou. Ideal para um `DataTable`. |
+| `/entrar` | **Entrar / Criar conta** | `POST /api/clientes/login`, `POST /api/clientes/cadastro` | Duas abas. `401` → "E-mail ou senha inválidos". `409` no cadastro (e-mail já tem conta) → oferece "Entrar". `422` → destaca `camposInvalidos`. Só aceita `redirect` interno. |
+| `/eventos/:eventoId/checkout` | **Checkout** | `POST /api/compras` | Quantidade, nome de cada participante, método de pagamento e total. Body `{ loteId, participantes: string[], metodoPagamento }` → `201` com `{ pedidoId, ingressoIds, valorTotal, statusPedido, urlPagamento, qrCodePix }`. `409` ("Restam apenas N ingressos") → mostra a mensagem e o link de volta ao evento. |
+| `/pagamento` | **Pagamento** | — | `PIX`: exibe `qrCodePix`. `CARTAO`: link `urlPagamento`. "Concluí o pagamento" leva ao detalhe do pedido. Sem compra em andamento → redireciona para "Meus pedidos". |
+| `/meus-pedidos` | **Meus pedidos** | `GET /api/clientes/me/pedidos` | Cards com evento, quantidade, valor e selo de status. Atualiza sozinha enquanto houver pedido pendente. |
+| `/meus-pedidos/:pedidoId` | **Detalhe do pedido** | `GET /api/clientes/me/pedidos/{id}` | Aviso por status, contagem regressiva da reserva, ingressos com nome do participante e QR em imagem (quando pago), resumo. Pedido de outro cliente → `404`. |
+
+O cabeçalho mostra "Olá, *nome* · Meus pedidos · Sair" com o cliente logado, ou
+o botão "Entrar". `GET /api/clientes/me` carrega o perfil.
+
+### Painel do administrador (token de admin)
+
+| Rota | Tela | Endpoint | Notas |
+|---|---|---|---|
+| `/admin/login` | **Login** | `POST /api/admin/login` | `401` → "e-mail ou senha inválidos". Dev: `admin@icb.local` / `admin123`. |
+| `/admin` | **Eventos** | `GET /api/admin/eventos` | Todos os eventos, inclusive passados e cancelados. |
+| `/admin/eventos/novo` | **Cadastrar evento** | `POST /api/admin/eventos` | `dataHora` no futuro, sem `Z`/offset; `dataFim` e `imagemUrl` opcionais. |
+| `/admin/eventos/:eventoId` | **Detalhe do evento** | `GET /api/eventos/{id}` + ações | Cancelar (`POST .../cancelamento`), excluir (`DELETE`), lotes com status. |
+| `/admin/eventos/:eventoId/editar` | **Editar evento** | `PUT /api/admin/eventos/{id}` | |
+| `/admin/eventos/:eventoId/lotes/novo` | **Criar lote** | `POST /api/admin/eventos/{id}/lotes` | Gera os N ingressos. Janela de vendas opcional. |
+| `/admin/eventos/:eventoId/lotes/:loteId/editar` | **Editar lote** | `PUT` / `DELETE .../lotes/{loteId}` | `quantidadeTotal` só aumenta. |
+| `/admin/eventos/:eventoId/inscritos` | **Inscritos** | `GET /api/admin/eventos/{id}/inscritos` | Um registro por ingresso pago: participante, comprador (nome, e-mail, telefone formatado), lote, pedido, código QR e data. |
 
 ### Autenticação — implementação no front
 
-1. Login → guardar `token` no Pinia + `sessionStorage`.
-2. Interceptor do Axios adiciona `Authorization: Bearer <token>` nas chamadas `/api/admin/**`.
-3. Resposta `401` em rota admin → limpar token e redirecionar para `/admin/login`.
-4. Sem refresh: ao expirar (2h), o próximo `401` leva o admin de volta ao login.
-5. *Navigation guard* do Vue Router protege as rotas `/admin/*` (exceto login).
+| | Admin | Cliente |
+|---|---|---|
+| Store | `stores/auth.ts` | `stores/cliente.ts` |
+| Onde guarda o token | `sessionStorage` (some ao fechar a aba) | `localStorage` (vale 7 dias) |
+| Rotas da API que recebem o token | `/api/admin/**` | `/api/compras`, `/api/clientes/me/**` |
+| `401` | limpa o token e vai para `/admin/login?redirect=...` | limpa o token e vai para `/entrar?redirect=...` |
+| Guard do router | rotas `/admin/*` (exceto login) | rotas com `meta.requiresCliente` (checkout, pagamento, meus pedidos) |
+
+O interceptor do Axios (`services/api.ts`) escolhe qual token enviar pela URL da
+requisição; as rotas públicas vão sem token. O backend separa os papéis por um
+*claim* no JWT, então um token de cliente nas rotas de admin recebe `403`.
 
 ---
 
@@ -265,21 +274,18 @@ não há evento para vender); (3) fluxo do cliente — listagem → detalhe → 
 O que **ainda não existe** e precisa ser considerado no design das telas
 (detalhe em [`guiaApiFrontend.md` §9](guiaApiFrontend.md)):
 
-1. **Sem `GET /api/pedidos/{id}`.** O cliente não consegue consultar o status do
-   pedido nem ver "meus ingressos". O header `Location` da compra aponta para uma
-   rota que não responde. A tela pós-compra é **informativa e estática, sem
-   polling**.
-2. **Gateway de pagamento é fake.** `urlPagamento`
+1. **Gateway de pagamento é fake.** `urlPagamento`
    (`https://pagamento.fake/checkout/...`) e `qrCodePix` (`00020126FAKE-PIX-...`)
-   são sintéticos — não abrem checkout real nem geram PIX pagável. Construir a
-   tela de pagamento com placeholders realistas; **a forma da resposta não deve
-   mudar** quando o Mercado Pago (sandbox) entrar.
-3. **E-mail é um stub.** O envio do ingresso/QR só grava log no servidor — o
-   cliente não recebe nada ainda. Não prometer o e-mail como canal único no texto
-   da UI.
-4. **Admin enxuto.** Sem editar/excluir evento, sem editar lote, sem check-in
-   (validar ingresso na portaria), sem paginação nas listas. Não construir essas
-   telas agora.
+   são sintéticos — não abrem checkout real nem geram PIX pagável. **A forma da
+   resposta não deve mudar** quando o Mercado Pago (sandbox) entrar.
+2. **Sem retomar o pagamento.** O detalhe do pedido não traz de novo o link/QR de
+   pagamento. Se o cliente sair da tela de pagamento antes de pagar, não tem como
+   voltar a ela; resta esperar a reserva expirar e comprar de novo.
+3. **E-mail é um stub.** O envio do ingresso só grava log no servidor. O canal
+   real do ingresso hoje é a área do cliente.
+4. **Sem recuperação de senha nem confirmação de e-mail** do cliente.
+5. **Admin:** sem check-in (validar ingresso na portaria), sem paginação, sem
+   upload de imagem (só guarda a URL), sem "descancelar" evento, sem faturamento.
 
 ---
 
@@ -288,19 +294,29 @@ O que **ainda não existe** e precisa ser considerado no design das telas
 Detalhe em [`guiaApiFrontend.md` §§1,4,5](guiaApiFrontend.md).
 
 - **Datas:** ISO-8601 **sem fuso** — `"2026-12-20T19:00:00"`. É a hora "de parede"
-  do evento: **não converter timezone**, exibir como veio. Ao enviar (admin),
-  usar exatamente esse formato (sem `Z`, sem offset).
-- **Dinheiro:** número JSON com 2 casas (`60.00`). Nunca negativo. Formatar para
-  exibição como `R$` (pt-BR).
+  do evento, no fuso da igreja: **não converter timezone**, exibir como veio. Ao
+  enviar (admin), usar exatamente esse formato (sem `Z`, sem offset).
+- **Dinheiro:** número JSON com 2 casas (`60.00`). Formatar como `R$` (pt-BR).
 - **IDs:** inteiros (`Long`), sequenciais, começam em 1.
-- **Nulos:** campos opcionais podem vir `null` (`descricao`, `urlPagamento`,
-  `qrCodePix`). Listas vazias vêm `[]`, nunca `null`.
+- **Telefone:** enviar **só os dígitos** (`13999998888`); exibir formatado com
+  `utils/telefone.ts#formatarTelefone`.
+- **Nulos:** campos opcionais podem vir `null`. Listas vazias vêm `[]`, nunca `null`.
 - **Sem paginação, sem versionamento na URL, sem rate limiting** (por enquanto).
-- **Enums:** string em MAIÚSCULAS, exatamente como especificado. `CARTAO` sem
-  cedilha. Valor fora da lista → `400`.
+- **Enums:** string em MAIÚSCULAS, exatamente como especificado. Lista completa em
+  `src/types/api.ts`.
   - `MetodoPagamento`: `PIX` · `CARTAO`
   - `StatusPedido`: `PENDENTE` · `PAGO` · `CANCELADO` · `EXPIRADO`
+  - `StatusIngresso`: `DISPONIVEL` · `RESERVADO` · `VENDIDO` · `UTILIZADO`
 - **Textos e mensagens de erro** da API vêm em português (pt-BR).
+
+### Como o status do pedido aparece para o cliente
+
+| `StatusPedido` | Selo na tela |
+|---|---|
+| `PENDENTE` | Aguardando pagamento (vira "Reserva expirada" quando `expiraEm` passa) |
+| `PAGO` | Pago |
+| `CANCELADO` | Pagamento recusado |
+| `EXPIRADO` | Reserva expirada |
 
 ### Tratamento de erros
 
@@ -312,118 +328,71 @@ Todo erro segue o envelope `ErroResponse`:
   "status": 422,
   "erro": "Unprocessable Entity",
   "mensagem": "Um ou mais campos são inválidos.",
-  "caminho": "/api/compras",
+  "caminho": "/api/clientes/cadastro",
   "camposInvalidos": [
-    { "campo": "email", "mensagem": "E-mail inválido." }
+    { "campo": "telefone", "mensagem": "Telefone inválido. Informe DDD + número, ex.: (13) 99999-8888." }
   ]
 }
 ```
 
 `camposInvalidos` **só aparece em `422`**; nos demais, tratar como ausente.
+`services/api.ts#tratarErro` normaliza tudo isso.
 
 | Status | Situação | Ação no front |
 |---|---|---|
 | `200` | consulta OK | renderiza |
-| `201` | recurso criado (compra, evento, lote) | usa o corpo; o `id` vem nele |
+| `201` | recurso criado (conta, compra, evento, lote) | usa o corpo; o `id` vem nele |
 | `400` | JSON malformado, tipo/enum inválido | mensagem genérica "requisição inválida" |
-| `401` | sem token / token inválido / senha errada | redireciona para login / "credenciais inválidas" |
-| `404` | evento / lote inexistente | tela "não encontrado" |
-| `409` | lote esgotado / transição inválida | "ingressos esgotados" — recarrega a disponibilidade |
+| `401` | sem token / token expirado / senha errada | volta para o login do papel / "e-mail ou senha inválidos" |
+| `403` | token do papel errado | não deve acontecer pela UI |
+| `404` | evento, lote ou pedido inexistente (ou de outro cliente) | tela "não encontrado" |
+| `409` | estoque insuficiente, e-mail já cadastrado, transição inválida | mostra a `mensagem` do backend |
 | `422` | validação de campo / regra de negócio | destaca `camposInvalidos` no formulário |
-| `500` | erro inesperado | "tente novamente mais tarde" (`mensagem` é genérica de propósito) |
+| `500` | erro inesperado | "tente novamente mais tarde" |
 
 ---
 
-## 8. Tipos do contrato (TypeScript) — ponto de partida
+## 8. Tipos do contrato (TypeScript)
+
+A fonte é [`src/types/api.ts`](../src/types/api.ts), mantido igual ao
+`guiaApiFrontend.md`. Os tipos da área do cliente:
 
 ```ts
-// src/types/api.ts
-export type MetodoPagamento = "PIX" | "CARTAO";
-export type StatusPedido = "PENDENTE" | "PAGO" | "CANCELADO" | "EXPIRADO";
-export type StatusLote = "A_VENDA" | "AGENDADO" | "ENCERRADO" | "ESGOTADO" | "NA_FILA";
-export type StatusVendas = "A_VENDA" | "AGENDADA" | "ENCERRADA";
-
-export interface EventoResumo {
-  id: number;
-  nome: string;
-  descricao: string | null;
-  dataHora: string;            // ISO-8601 sem fuso (início)
-  dataFim: string | null;      // null = evento pontual
-  imagemUrl: string | null;    // banner; null = sem imagem
-  menorPreco: number;
-  ingressosDisponiveis: number;
-  statusVendas: StatusVendas;
-  aberturaVendas: string | null; // próximo lote a abrir; só em AGENDADA
-}
-
-export interface Lote {
-  id: number;
-  nome: string;
-  preco: number;
-  quantidadeDisponivel: number;
-  status: StatusLote;          // só A_VENDA é comprável
-  inicioVendas: string | null;
-  fimVendas: string | null;
-}
-
-export interface EventoDetalhe {
-  id: number;
-  nome: string;
-  descricao: string | null;
-  dataHora: string;
-  dataFim: string | null;
-  imagemUrl: string | null;
-  cancelado: boolean;          // true = esconde a compra
-  lotes: Lote[];
-}
+export const MAX_INGRESSOS_POR_PEDIDO = 5
 
 export interface NovaCompra {
-  loteId: number;
-  nome: string;
-  email: string;
-  telefone: string;
-  metodoPagamento: MetodoPagamento;
+  loteId: number
+  participantes: string[]       // 1 a 5 nomes, um por ingresso
+  metodoPagamento: MetodoPagamento
 }
 
 export interface CompraCriada {
-  pedidoId: number;
-  ingressoId: number;
-  valorTotal: number;
-  statusPedido: StatusPedido;   // sempre "PENDENTE" na criação
-  urlPagamento: string | null;
-  qrCodePix: string | null;     // preenchido só para PIX
+  pedidoId: number
+  ingressoIds: number[]
+  valorTotal: number
+  statusPedido: StatusPedido    // sempre "PENDENTE" na criação
+  urlPagamento: string | null
+  qrCodePix: string | null      // preenchido só para PIX
 }
 
-export interface LoginAdmin { email: string; senha: string; }
-export interface TokenAdmin { token: string; tipo: "Bearer"; expiraEmSegundos: number; }
+export interface CadastroCliente { nome: string; email: string; telefone: string; senha: string }
+export interface LoginCliente { email: string; senha: string }
+export interface TokenAcesso { token: string; tipo: 'Bearer'; expiraEmSegundos: number }
 
-export interface NovoEvento {
-  nome: string; descricao?: string; dataHora: string;
-  dataFim?: string; imagemUrl?: string;
-}
-export interface NovoLote {
-  nome: string; preco: number; quantidadeTotal: number;
-  inicioVendas?: string; fimVendas?: string;
-}
-
-export interface Inscrito {
-  nomeCliente: string;
-  emailCliente: string;
-  telefoneCliente: string;
-  loteId: number;
-  nomeLote: string;
-  pedidoId: number;
-  codigoQr: string;
-  dataCompra: string;
+export interface PedidoCliente {
+  id: number
+  dataPedido: string
+  status: StatusPedido
+  valorTotal: number
+  quantidadeIngressos: number
+  evento: EventoDoPedido | null  // { id, nome, dataHora, dataFim, imagemUrl, loteId, nomeLote }
+  expiraEm: string | null        // só quando PENDENTE
 }
 
-export interface ErroResponse {
-  timestamp: string;
-  status: number;
-  erro: string;
-  mensagem: string;
-  caminho: string;
-  camposInvalidos?: { campo: string; mensagem: string }[];
+export interface PedidoClienteDetalhe extends PedidoCliente {
+  metodoPagamento: MetodoPagamento | null
+  statusPagamento: StatusPagamento | null
+  ingressos: IngressoDoPedido[]  // { id, nomeParticipante, status, codigoQr }; vazio se EXPIRADO/CANCELADO
 }
 ```
 
@@ -434,8 +403,10 @@ export interface ErroResponse {
 De [`analiseDeRequisitos.md` §3](analiseDeRequisitos.md):
 
 - **RNF-16 / CORS:** front restrito ao domínio configurado no backend.
-- **RNF-19 (LGPD):** informar ao cliente, no momento da compra, a finalidade do
-  uso dos dados (emissão e envio do ingresso).
+- **RNF-18 (LGPD — minimização):** o cadastro pede só nome, e-mail, telefone e
+  senha; **CPF não é coletado**.
+- **RNF-19 (LGPD — finalidade):** o cadastro informa que os dados servem para a
+  emissão dos ingressos e o contato sobre os eventos.
 - **RNF-34/35:** textos, datas e valores em pt-BR (`America/Sao_Paulo`, `R$`).
 - **RNF-14:** HTTPS em produção.
 - Desempenho de referência: listagem de eventos < 1 s, compra < 3 s (metas do
@@ -443,12 +414,11 @@ De [`analiseDeRequisitos.md` §3](analiseDeRequisitos.md):
 
 ---
 
-## 10. Fora de escopo do MVP (não construir agora)
+## 10. Fora de escopo (não construir agora)
 
-- Contas de cliente com login e área "meus ingressos".
-- Compra de múltiplos ingressos num pedido.
 - Boleto como método de pagamento.
 - Check-in / validação de ingresso na portaria.
+- Recuperação de senha e confirmação de e-mail.
+- Faturamento, relatórios financeiros e dashboards administrativos.
 - Reembolso/estorno, cupons, meia-entrada.
-- Relatórios financeiros e dashboards administrativos.
-- Edição/exclusão de evento e edição de lote (não há endpoint).
+- Coleta de CPF.
