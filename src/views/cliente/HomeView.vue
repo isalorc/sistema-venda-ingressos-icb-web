@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { listarEventosDisponiveis } from '@/services/eventos'
 import { tratarErro } from '@/services/api'
 import type { EventoResumo } from '@/types/api'
-import { formatarDataHora, formatarDinheiro } from '@/utils/formato'
+import { formatarData, formatarDinheiro, formatarPeriodo } from '@/utils/formato'
 
 const eventos = ref<EventoResumo[]>([])
 const carregando = ref(true)
@@ -39,13 +39,27 @@ onMounted(carregar)
 
     <ul v-else class="grade">
       <li v-for="evento in eventos" :key="evento.id" class="cartao">
+        <img
+          v-if="evento.imagemUrl"
+          :src="evento.imagemUrl"
+          alt=""
+          class="cartao__banner"
+          loading="lazy"
+        />
         <div class="cartao__corpo pilha">
           <h2>{{ evento.nome }}</h2>
-          <p class="cartao__data">{{ formatarDataHora(evento.dataHora) }}</p>
+          <p class="cartao__data">{{ formatarPeriodo(evento.dataHora, evento.dataFim) }}</p>
           <p v-if="evento.descricao" class="cartao__descricao">{{ evento.descricao }}</p>
         </div>
         <div class="cartao__rodape">
-          <div>
+          <div v-if="evento.statusVendas === 'AGENDADA'">
+            <span class="cartao__preco">a partir de {{ formatarDinheiro(evento.menorPreco) }}</span>
+            <span class="texto-muted">
+              Vendas
+              {{ evento.aberturaVendas ? `a partir de ${formatarData(evento.aberturaVendas)}` : 'em breve' }}
+            </span>
+          </div>
+          <div v-else>
             <span class="cartao__preco">a partir de {{ formatarDinheiro(evento.menorPreco) }}</span>
             <span class="texto-muted">{{ evento.ingressosDisponiveis }} ingresso(s) disponível(is)</span>
           </div>
@@ -79,10 +93,24 @@ h1 {
   flex-direction: column;
   justify-content: space-between;
   gap: var(--sp-4);
-  padding: var(--sp-5);
   background-color: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio-md);
+  overflow: hidden;
+}
+
+.cartao__banner {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.cartao__corpo {
+  padding: var(--sp-5) var(--sp-5) 0;
+}
+
+.cartao__banner + .cartao__corpo {
+  padding-top: var(--sp-4);
 }
 
 .cartao__corpo h2 {
@@ -108,6 +136,7 @@ h1 {
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--sp-3);
+  padding: 0 var(--sp-5) var(--sp-5);
 }
 
 .cartao__rodape > div {

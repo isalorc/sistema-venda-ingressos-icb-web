@@ -3,8 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { consultarEvento } from '@/services/eventos'
 import { tratarErro } from '@/services/api'
-import type { EventoDetalhe } from '@/types/api'
-import { formatarDataHora, formatarDinheiro } from '@/utils/formato'
+import type { EventoDetalhe, Lote } from '@/types/api'
+import { formatarData, formatarDinheiro, formatarPeriodo } from '@/utils/formato'
 
 const props = defineProps<{ eventoId: string }>()
 const router = useRouter()
@@ -15,9 +15,42 @@ const erro = ref('')
 const naoEncontrado = ref(false)
 
 const loteSelecionadoId = ref<number | null>(null)
-const temLoteComEstoque = computed(() =>
-  (evento.value?.lotes ?? []).some((lote) => lote.quantidadeDisponivel > 0),
+
+/** Só o lote A_VENDA pode ser comprado (virada de lote). */
+function loteCompravel(lote: Lote): boolean {
+  return lote.status === 'A_VENDA'
+}
+
+const temLoteAVenda = computed(() =>
+  (evento.value?.lotes ?? []).some(loteCompravel),
 )
+
+/** Etiqueta exibida à direita de cada lote conforme o status. */
+function etiquetaLote(lote: Lote): string {
+  switch (lote.status) {
+    case 'A_VENDA':
+      return `${lote.quantidadeDisponivel} disponível(is)`
+    case 'AGENDADO':
+      return lote.inicioVendas ? `Abre em ${formatarData(lote.inicioVendas)}` : 'Em breve'
+    case 'ENCERRADO':
+      return 'Vendas encerradas'
+    case 'ESGOTADO':
+      return 'Esgotado'
+    case 'NA_FILA':
+      return 'Próximo lote'
+    default:
+      return ''
+  }
+}
+
+/** Aviso quando não há lote à venda (e o evento não está cancelado). */
+const avisoSemVenda = computed(() => {
+  const lotes = evento.value?.lotes ?? []
+  if (lotes.some((l) => l.status === 'AGENDADO')) {
+    return 'As vendas deste evento ainda não começaram.'
+  }
+  return 'As vendas deste evento foram encerradas.'
+})
 
 async function carregar() {
   carregando.value = true
@@ -56,46 +89,43 @@ onMounted(carregar)
 
     <template v-else-if="evento">
       <header class="pilha">
+        <img v-if="evento.imagemUrl" :src="evento.imagemUrl" alt="" class="banner" />
         <h1>{{ evento.nome }}</h1>
-        <p class="texto-muted">{{ formatarDataHora(evento.dataHora) }}</p>
+        <p class="texto-muted">{{ formatarPeriodo(evento.dataHora, evento.dataFim) }}</p>
         <p v-if="evento.descricao">{{ evento.descricao }}</p>
       </header>
 
-      <form class="pilha" @submit.prevent="continuar">
+      <p v-if="evento.cancelado" class="alerta alerta--erro">
+        As vendas deste evento foram encerradas.
+      </p>
+
+      <form v-else class="pilha" @submit.prevent="continuar">
         <h2>Escolha o ingresso</h2>
 
-        <p v-if="!temLoteComEstoque" class="alerta alerta--erro">
-          Todos os ingressos deste evento estão esgotados.
-        </p>
+        <p v-if="!temLoteAVenda" class="alerta alerta--erro">{{ avisoSemVenda }}</p>
 
-        <fieldset v-else class="lotes">
-          <legend class="visualmente-oculto">Lotes disponíveis</legend>
+        <fieldset v-if="evento.lotes.length" class="lotes">
+          <legend class="visualmente-oculto">Lotes do evento</legend>
           <label
             v-for="lote in evento.lotes"
             :key="lote.id"
             class="lote"
-            :class="{ 'lote--esgotado': lote.quantidadeDisponivel === 0 }"
+            :class="{ 'lote--desabilitado': !loteCompravel(lote) }"
           >
             <input
               v-model="loteSelecionadoId"
               type="radio"
               name="lote"
               :value="lote.id"
-              :disabled="lote.quantidadeDisponivel === 0"
+              :disabled="!loteCompravel(lote)"
             />
             <span class="lote__nome">{{ lote.nome }}</span>
             <span class="lote__preco">{{ formatarDinheiro(lote.preco) }}</span>
-            <span class="lote__estoque texto-muted">
-              {{
-                lote.quantidadeDisponivel === 0
-                  ? 'Esgotado'
-                  : `${lote.quantidadeDisponivel} disponível(is)`
-              }}
-            </span>
+            <span class="lote__estoque texto-muted">{{ etiquetaLote(lote) }}</span>
           </label>
         </fieldset>
 
-        <div v-if="temLoteComEstoque">
+        <div v-if="temLoteAVenda">
           <button type="submit" class="btn btn--primario" :disabled="loteSelecionadoId === null">
             Continuar
           </button>
@@ -112,6 +142,13 @@ h1 {
 
 h2 {
   font-size: var(--fs-lg);
+}
+
+.banner {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: var(--raio-md);
 }
 
 .voltar {
@@ -148,9 +185,12 @@ h2 {
   box-shadow: inset 0 0 0 1px var(--cor-tinta);
 }
 
-.lote--esgotado {
+/* Lote finalizado / indisponível: cor mais clara, como desabilitado. */
+.lote--desabilitado {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
+  background-color: var(--cor-fundo-alt);
+  border-color: var(--cor-borda);
 }
 
 .lote input {

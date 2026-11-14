@@ -45,7 +45,8 @@ async function carregar() {
   try {
     const detalhe = await consultarEvento(Number(props.eventoId))
     const encontrado = detalhe.lotes.find((l) => l.id === loteId)
-    if (!encontrado) {
+    // Só o lote A_VENDA é comprável — se virou/cancelou, volta ao detalhe.
+    if (!encontrado || detalhe.cancelado || encontrado.status !== 'A_VENDA') {
       router.replace(voltarAoDetalhe.value)
       return
     }
