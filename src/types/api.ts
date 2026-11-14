@@ -56,21 +56,91 @@ export interface EventoDetalhe {
 
 /* ---------- Cliente: compra ---------- */
 
+/**
+ * Corpo do `POST /api/compras` (exige token de cliente). Um nome por ingresso,
+ * de 1 a MAX_INGRESSOS_POR_PEDIDO (RN-1).
+ */
 export interface NovaCompra {
   loteId: number
-  nome: string
-  email: string
-  telefone: string
+  participantes: string[]
   metodoPagamento: MetodoPagamento
 }
 
 export interface CompraCriada {
   pedidoId: number
-  ingressoId: number
+  ingressoIds: number[]
   valorTotal: number
   statusPedido: StatusPedido // sempre "PENDENTE" na criação
   urlPagamento: string | null
   qrCodePix: string | null // preenchido só para PIX
+}
+
+/* ---------- Cliente: conta e pedidos ---------- */
+
+/** Limite de ingressos por pedido no backend (`app.compra.max-ingressos-por-pedido`). */
+export const MAX_INGRESSOS_POR_PEDIDO = 5
+
+export type StatusIngresso = 'DISPONIVEL' | 'RESERVADO' | 'VENDIDO' | 'UTILIZADO'
+export type StatusPagamento = 'PENDENTE' | 'APROVADO' | 'RECUSADO' | 'CANCELADO'
+
+export interface CadastroCliente {
+  nome: string
+  email: string
+  telefone: string
+  senha: string // 8 a 72 caracteres
+}
+
+export interface LoginCliente {
+  email: string
+  senha: string
+}
+
+/** Token de acesso (admin ou cliente) — mesmo formato nos dois logins. */
+export interface TokenAcesso {
+  token: string
+  tipo: 'Bearer'
+  expiraEmSegundos: number
+}
+
+export interface PerfilCliente {
+  id: number
+  nome: string
+  email: string
+  telefone: string
+}
+
+export interface EventoDoPedido {
+  id: number
+  nome: string
+  dataHora: string
+  dataFim: string | null
+  imagemUrl: string | null
+  loteId: number
+  nomeLote: string
+}
+
+/** Item de "Meus pedidos". */
+export interface PedidoCliente {
+  id: number
+  dataPedido: string
+  status: StatusPedido
+  valorTotal: number
+  quantidadeIngressos: number
+  evento: EventoDoPedido | null // null só em pedidos antigos sem lote recuperável
+  expiraEm: string | null // prazo da reserva; só em PENDENTE
+}
+
+export interface IngressoDoPedido {
+  id: number
+  nomeParticipante: string | null
+  status: StatusIngresso
+  codigoQr: string | null // só depois do pagamento aprovado
+}
+
+export interface PedidoClienteDetalhe extends PedidoCliente {
+  metodoPagamento: MetodoPagamento | null
+  statusPagamento: StatusPagamento | null
+  ingressos: IngressoDoPedido[] // vazio em EXPIRADO/CANCELADO
 }
 
 /* ---------- Admin ---------- */
@@ -80,11 +150,7 @@ export interface LoginAdmin {
   senha: string
 }
 
-export interface TokenAdmin {
-  token: string
-  tipo: 'Bearer'
-  expiraEmSegundos: number
-}
+export type TokenAdmin = TokenAcesso
 
 export interface NovoEvento {
   nome: string
@@ -159,6 +225,7 @@ export interface Inscrito {
   pedidoId: number
   codigoQr: string
   dataCompra: string
+  nomeParticipante: string | null // quem vai ao evento; null em vendas antigas
 }
 
 /* ---------- Erro padrão (envelope ErroResponse) ---------- */

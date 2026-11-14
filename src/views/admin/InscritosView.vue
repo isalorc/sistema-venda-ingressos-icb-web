@@ -5,6 +5,7 @@ import { consultarEvento } from '@/services/eventos'
 import { tratarErro } from '@/services/api'
 import type { EventoDetalhe, Inscrito } from '@/types/api'
 import { formatarDataHora } from '@/utils/formato'
+import { formatarTelefone } from '@/utils/telefone'
 
 const props = defineProps<{ eventoId: string }>()
 const eventoId = computed(() => Number(props.eventoId))
@@ -58,15 +59,14 @@ onMounted(carregar)
         </span>
       </div>
 
-      <p v-if="inscritos.length === 0" class="texto-muted">
-        Nenhum pagamento confirmado ainda.
-      </p>
+      <p v-if="inscritos.length === 0" class="texto-muted">Nenhum pagamento confirmado ainda.</p>
 
       <div v-else class="tabela-rolagem">
         <table class="tabela">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th>Participante</th>
+              <th>Comprador</th>
               <th>E-mail</th>
               <th>Telefone</th>
               <th>Lote</th>
@@ -75,13 +75,16 @@ onMounted(carregar)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="inscrito in inscritos" :key="inscrito.pedidoId">
+            <tr v-for="inscrito in inscritos" :key="inscrito.codigoQr">
+              <td>{{ inscrito.nomeParticipante ?? inscrito.nomeCliente }}</td>
               <td>{{ inscrito.nomeCliente }}</td>
               <td>{{ inscrito.emailCliente }}</td>
-              <td>{{ inscrito.telefoneCliente }}</td>
+              <td>{{ formatarTelefone(inscrito.telefoneCliente) }}</td>
               <td>{{ inscrito.nomeLote }}</td>
               <td>{{ formatarDataHora(inscrito.dataCompra) }}</td>
-              <td><code>{{ inscrito.codigoQr }}</code></td>
+              <td>
+                <code>{{ inscrito.codigoQr }}</code>
+              </td>
             </tr>
           </tbody>
         </table>
