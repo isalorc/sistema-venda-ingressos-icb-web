@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { formatarData, formatarDataHora, formatarDinheiro, paraDataHoraApi } from './formato'
+import {
+  formatarData,
+  formatarDataHora,
+  formatarDinheiro,
+  formatarPeriodo,
+  paraDataHoraApi,
+  paraInputDataHora,
+} from './formato'
 
 describe('formatarDataHora', () => {
   it('formata a data ISO sem converter fuso', () => {
@@ -21,6 +28,35 @@ describe('formatarDinheiro', () => {
   it('formata em reais com 2 casas', () => {
     expect(formatarDinheiro(60)).toBe('R$ 60,00')
     expect(formatarDinheiro(1234.5)).toBe('R$ 1.234,50')
+  })
+})
+
+describe('formatarPeriodo', () => {
+  it('sem data de fim, formata só o início', () => {
+    expect(formatarPeriodo('2026-12-20T19:00:00', null)).toBe('20 de dez de 2026, 19:00')
+  })
+
+  it('mesmo dia, mostra só a hora final', () => {
+    expect(formatarPeriodo('2026-12-20T19:00:00', '2026-12-20T22:00:00')).toBe(
+      '20 de dez de 2026, 19:00 às 22:00',
+    )
+  })
+
+  it('dias diferentes, mostra o intervalo completo', () => {
+    expect(formatarPeriodo('2026-12-20T19:00:00', '2026-12-22T22:00:00')).toBe(
+      '20 de dez de 2026, 19:00 a 22 de dez de 2026, 22:00',
+    )
+  })
+})
+
+describe('paraInputDataHora', () => {
+  it('corta os segundos do ISO da API', () => {
+    expect(paraInputDataHora('2026-12-20T19:00:00')).toBe('2026-12-20T19:00')
+  })
+
+  it('devolve string vazia para null/undefined', () => {
+    expect(paraInputDataHora(null)).toBe('')
+    expect(paraInputDataHora(undefined)).toBe('')
   })
 })
 

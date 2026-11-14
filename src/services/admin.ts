@@ -4,7 +4,10 @@
  */
 import { api } from '@/services/api'
 import type {
+  EdicaoEvento,
+  EdicaoLote,
   EventoAdmin,
+  EventoDetalhe,
   Inscrito,
   LoginAdmin,
   NovoEvento,
@@ -29,9 +32,46 @@ export async function criarEvento(evento: NovoEvento): Promise<RecursoCriado> {
   return data
 }
 
+/** Substitui os dados editáveis do evento. Devolve o evento no shape do detalhe. */
+export async function atualizarEvento(
+  eventoId: number,
+  evento: EdicaoEvento,
+): Promise<EventoDetalhe> {
+  const { data } = await api.put<EventoDetalhe>(`/api/admin/eventos/${eventoId}`, evento)
+  return data
+}
+
+/** Cancela o evento (some da vitrine, não aceita compra nova). Idempotente. */
+export async function cancelarEvento(eventoId: number): Promise<void> {
+  await api.post(`/api/admin/eventos/${eventoId}/cancelamento`)
+}
+
+/** Exclusão real. 409 se houver ingresso reservado ou vendido. */
+export async function excluirEvento(eventoId: number): Promise<void> {
+  await api.delete(`/api/admin/eventos/${eventoId}`)
+}
+
 export async function criarLote(eventoId: number, lote: NovoLote): Promise<RecursoCriado> {
   const { data } = await api.post<RecursoCriado>(`/api/admin/eventos/${eventoId}/lotes`, lote)
   return data
+}
+
+/** Substitui os dados editáveis do lote. Devolve o evento no shape do detalhe. */
+export async function atualizarLote(
+  eventoId: number,
+  loteId: number,
+  lote: EdicaoLote,
+): Promise<EventoDetalhe> {
+  const { data } = await api.put<EventoDetalhe>(
+    `/api/admin/eventos/${eventoId}/lotes/${loteId}`,
+    lote,
+  )
+  return data
+}
+
+/** Apaga o lote e seus ingressos. 409 se houver ingresso reservado ou vendido. */
+export async function excluirLote(eventoId: number, loteId: number): Promise<void> {
+  await api.delete(`/api/admin/eventos/${eventoId}/lotes/${loteId}`)
 }
 
 export async function listarInscritos(eventoId: number): Promise<Inscrito[]> {

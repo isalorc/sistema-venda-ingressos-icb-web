@@ -78,6 +78,16 @@
   background-color: var(--cor-fundo-alt);
 }
 
+.btn--perigo {
+  background-color: var(--cor-superficie);
+  border-color: var(--cor-erro);
+  color: var(--cor-erro);
+}
+
+.btn--perigo:not(:disabled):hover {
+  background-color: var(--cor-erro-fundo);
+}
+
 .btn--bloco {
   width: 100%;
 }

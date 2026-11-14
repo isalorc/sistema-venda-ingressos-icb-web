@@ -8,6 +8,16 @@
 export type MetodoPagamento = 'PIX' | 'CARTAO'
 export type StatusPedido = 'PENDENTE' | 'PAGO' | 'CANCELADO' | 'EXPIRADO'
 
+/**
+ * Status derivado de um lote (virada de lote). Só `A_VENDA` é comprável.
+ * Precedência quando mais de um se aplica: ENCERRADO > AGENDADO > ESGOTADO >
+ * A_VENDA / NA_FILA. Ver docs/especificacaoViradaDeLote.md §4.
+ */
+export type StatusLote = 'A_VENDA' | 'AGENDADO' | 'ENCERRADO' | 'ESGOTADO' | 'NA_FILA'
+
+/** Resumo de vendas de um evento, para o card da listagem e o painel admin. */
+export type StatusVendas = 'A_VENDA' | 'AGENDADA' | 'ENCERRADA'
+
 /* ---------- Cliente: consulta de eventos ---------- */
 
 export interface EventoResumo {
@@ -15,8 +25,12 @@ export interface EventoResumo {
   nome: string
   descricao: string | null
   dataHora: string
+  dataFim: string | null // null = evento pontual
+  imagemUrl: string | null // banner; null = sem imagem
   menorPreco: number
   ingressosDisponiveis: number
+  statusVendas: StatusVendas
+  aberturaVendas: string | null // data do próximo lote a abrir; só em AGENDADA
 }
 
 export interface Lote {
@@ -24,6 +38,9 @@ export interface Lote {
   nome: string
   preco: number
   quantidadeDisponivel: number
+  status: StatusLote
+  inicioVendas: string | null
+  fimVendas: string | null
 }
 
 export interface EventoDetalhe {
@@ -31,6 +48,9 @@ export interface EventoDetalhe {
   nome: string
   descricao: string | null
   dataHora: string
+  dataFim: string | null
+  imagemUrl: string | null
+  cancelado: boolean // true = esconde a compra, mostra "vendas encerradas"
   lotes: Lote[]
 }
 
@@ -70,12 +90,40 @@ export interface NovoEvento {
   nome: string
   descricao?: string
   dataHora: string
+  dataFim?: string // ISO sem fuso; >= dataHora
+  imagemUrl?: string // URL http(s) do banner
 }
 
 export interface NovoLote {
   nome: string
   preco: number
   quantidadeTotal: number
+  inicioVendas?: string // antes disso o lote fica AGENDADO
+  fimVendas?: string // no futuro; >= inicioVendas; <= dataHora do evento
+}
+
+/**
+ * Corpo do `PUT /api/admin/eventos/{id}`. Substituição total (não é PATCH):
+ * enviar todos os campos. `null` nos opcionais limpa o valor.
+ */
+export interface EdicaoEvento {
+  nome: string
+  descricao: string | null
+  dataHora: string
+  dataFim: string | null
+  imagemUrl: string | null
+}
+
+/**
+ * Corpo do `PUT /api/admin/eventos/{eventoId}/lotes/{loteId}`.
+ * `quantidadeTotal` só pode aumentar; `null` nas janelas limpa a data.
+ */
+export interface EdicaoLote {
+  nome: string
+  preco: number
+  quantidadeTotal: number
+  inicioVendas: string | null
+  fimVendas: string | null
 }
 
 export interface RecursoCriado {
@@ -92,10 +140,14 @@ export interface EventoAdmin {
   nome: string
   descricao: string | null
   dataHora: string
+  dataFim: string | null
+  imagemUrl: string | null
+  cancelado: boolean
   jaOcorreu: boolean
   quantidadeLotes: number
   ingressosTotais: number
   ingressosDisponiveis: number
+  statusVendas: StatusVendas
 }
 
 export interface Inscrito {

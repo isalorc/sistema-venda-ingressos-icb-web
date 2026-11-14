@@ -48,6 +48,35 @@ export function formatarData(iso: string): string {
 }
 
 /**
+ * Período do evento. Sem `fim` (ou fim inválido) cai em `formatarDataHora`.
+ * Mesmo dia: "20 de dez de 2026, 19:00 às 22:00".
+ * Dias diferentes: "20 de dez de 2026, 19:00 a 22 de dez de 2026, 22:00".
+ */
+export function formatarPeriodo(inicioIso: string, fimIso: string | null): string {
+  const inicio = formatarDataHora(inicioIso)
+  if (!fimIso) return inicio
+  const i = analisar(inicioIso)
+  const f = analisar(fimIso)
+  if (!i || !f) return inicio
+  const fhh = String(f.hora).padStart(2, '0')
+  const fmm = String(f.minuto).padStart(2, '0')
+  const mesmoDia = i.ano === f.ano && i.mes === f.mes && i.dia === f.dia
+  return mesmoDia
+    ? `${inicio} às ${fhh}:${fmm}`
+    : `${inicio} a ${formatarDataHora(fimIso)}`
+}
+
+/**
+ * Converte um ISO da API ("2026-12-20T19:00:00") para o valor de um
+ * `<input type="datetime-local">` ("2026-12-20T19:00"). Vazio/`null` → "".
+ */
+export function paraInputDataHora(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const m = iso.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/)
+  return m?.[1] ?? ''
+}
+
+/**
  * Normaliza o valor de um `<input type="datetime-local">`
  * ("2026-12-20T19:00") para o formato da API sem fuso ("2026-12-20T19:00:00").
  * Se já vier com segundos, mantém. Valor vazio devolve "".
