@@ -1,10 +1,10 @@
 /**
- * Guarda a compra recém-criada para as telas de pagamento e pós-compra.
+ * Guarda a compra recém-criada para a tela de pagamento.
  *
- * O backend não tem `GET /api/pedidos/{id}` (ver docs/guiaApiFrontend.md §9), então
- * a resposta do `POST /api/compras` só existe aqui, em memória. Ao recarregar a
- * página o estado se perde — as telas seguintes tratam esse caso voltando para o
- * início.
+ * O detalhe do pedido (`GET /api/clientes/me/pedidos/{id}`) não devolve de novo
+ * `qrCodePix`/`urlPagamento` (ver docs/guiaApiFrontend.md §9), então os dados de
+ * pagamento só existem aqui, em memória. Ao recarregar a página a tela de
+ * pagamento manda para "Meus pedidos".
  */
 import { defineStore } from 'pinia'
 import type { CompraCriada, MetodoPagamento } from '@/types/api'
@@ -13,6 +13,7 @@ export interface CompraContexto {
   compra: CompraCriada
   nomeEvento: string
   nomeLote: string
+  quantidade: number
   metodoPagamento: MetodoPagamento
   /** epoch em ms da criação — base do contador de 15 min (RN-2) */
   criadaEm: number

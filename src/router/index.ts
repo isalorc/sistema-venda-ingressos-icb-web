@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { setUnauthorizedHandler } from '@/services/api'
+import { setClienteUnauthorizedHandler, setUnauthorizedHandler } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { useClienteStore } from '@/stores/cliente'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,16 +26,33 @@ const router = createRouter({
           name: 'checkout',
           component: () => import('@/views/cliente/CheckoutView.vue'),
           props: true,
+          meta: { requiresCliente: true },
         },
         {
           path: 'pagamento',
           name: 'pagamento',
           component: () => import('@/views/cliente/PagamentoView.vue'),
+          meta: { requiresCliente: true },
+        },
+        // Rota antiga: a confirmação agora é acompanhada em "Meus pedidos".
+        { path: 'pos-compra', redirect: { name: 'meus-pedidos' } },
+        {
+          path: 'entrar',
+          name: 'entrar',
+          component: () => import('@/views/cliente/EntrarView.vue'),
         },
         {
-          path: 'pos-compra',
-          name: 'pos-compra',
-          component: () => import('@/views/cliente/PosCompraView.vue'),
+          path: 'meus-pedidos',
+          name: 'meus-pedidos',
+          component: () => import('@/views/cliente/MeusPedidosView.vue'),
+          meta: { requiresCliente: true },
+        },
+        {
+          path: 'meus-pedidos/:pedidoId',
+          name: 'pedido-cliente',
+          component: () => import('@/views/cliente/PedidoClienteView.vue'),
+          props: true,
+          meta: { requiresCliente: true },
         },
       ],
     },
@@ -104,6 +122,17 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+  const cliente = useClienteStore()
+
+  if (to.meta.requiresCliente && !cliente.estaLogado) {
+    return { name: 'entrar', query: { redirect: to.fullPath } }
+  }
+  if (to.name === 'entrar' && cliente.estaLogado) {
+    const redirect = to.query.redirect
+    return typeof redirect === 'string' && redirect.startsWith('/')
+      ? redirect
+      : { name: 'meus-pedidos' }
+  }
 
   if (to.meta.requiresAdmin && !auth.estaAutenticado) {
     return { name: 'admin-login', query: { redirect: to.fullPath } }
@@ -118,6 +147,13 @@ router.beforeEach((to) => {
 setUnauthorizedHandler(() => {
   const redirect = router.currentRoute.value.fullPath
   router.push({ name: 'admin-login', query: redirect ? { redirect } : {} })
+})
+
+// Em 401 numa rota de cliente (token expirado), volta para o login do cliente.
+setClienteUnauthorizedHandler(() => {
+  useClienteStore().sair()
+  const redirect = router.currentRoute.value.fullPath
+  router.push({ name: 'entrar', query: redirect ? { redirect } : {} })
 })
 
 export default router

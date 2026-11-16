@@ -42,12 +42,16 @@ async function copiarPix() {
 }
 
 function concluir() {
-  router.push({ name: 'pos-compra' })
+  if (!contexto) return
+  const pedidoId = String(contexto.compra.pedidoId)
+  compraStore.limpar()
+  router.push({ name: 'pedido-cliente', params: { pedidoId } })
 }
 
 onMounted(() => {
+  // Recarregou a página: os dados de pagamento só existiam em memória.
   if (!contexto) {
-    router.replace({ name: 'home' })
+    router.replace({ name: 'meus-pedidos' })
     return
   }
   cronometro = setInterval(() => {
@@ -66,7 +70,11 @@ onUnmounted(() => {
       <h1>Pagamento</h1>
       <div class="resumo">
         <strong>{{ contexto.nomeEvento }}</strong>
-        <span>{{ contexto.nomeLote }} — {{ formatarDinheiro(contexto.compra.valorTotal) }}</span>
+        <span>
+          {{ contexto.nomeLote }} · {{ contexto.quantidade }}
+          {{ contexto.quantidade === 1 ? 'ingresso' : 'ingressos' }} —
+          {{ formatarDinheiro(contexto.compra.valorTotal) }}
+        </span>
       </div>
     </header>
 
@@ -75,8 +83,8 @@ onUnmounted(() => {
       <RouterLink :to="{ name: 'home' }">volte aos eventos</RouterLink> para tentar de novo.
     </p>
     <p v-else class="alerta alerta--aviso">
-      Reserva garantida por mais <strong>{{ contadorFormatado }}</strong>. Conclua o
-      pagamento antes disso.
+      Reserva garantida por mais <strong>{{ contadorFormatado }}</strong
+      >. Conclua o pagamento antes disso.
     </p>
 
     <template v-if="!expirado">
@@ -114,7 +122,9 @@ onUnmounted(() => {
       </p>
 
       <div>
-        <button type="button" class="btn btn--primario" @click="concluir">Concluí o pagamento</button>
+        <button type="button" class="btn btn--primario" @click="concluir">
+          Concluí o pagamento — ver meu pedido
+        </button>
       </div>
     </template>
   </section>
